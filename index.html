@@ -1,385 +1,152 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>线索CRM</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>值班登记表</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--c1:#4F46E5;--c1l:#EEF2FF;--gray:#6b7280;--border:#e5e7eb;--white:#fff;--bg:#f3f4f6;--red:#EF4444;--green:#10B981;--safe-b:env(safe-area-inset-bottom,0px)}
-body{font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:#111827;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
-.page{display:none;flex-direction:column;min-height:100vh;padding-bottom:calc(60px + var(--safe-b))}.page.on{display:flex}
-.navbar{position:fixed;bottom:0;left:0;right:0;height:calc(56px + var(--safe-b));padding-bottom:var(--safe-b);background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px;color:var(--gray);cursor:pointer;user-select:none}
-.nav-item.cur{color:var(--c1)}.nav-item svg{width:24px;height:24px}
-.header{background:var(--white);position:sticky;top:0;z-index:50}
-.top-tabs{display:flex;border-bottom:1px solid var(--border)}
-.top-tab{flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:500;color:var(--gray);border-bottom:2px solid transparent;cursor:pointer}
-.top-tab.sel{color:var(--c1);border-color:var(--c1)}
-.sub-tabs{display:flex;padding:8px 16px 4px;gap:8px;overflow-x:auto}
-.sub-tab{font-size:12px;padding:4px 12px;border-radius:999px;white-space:nowrap;cursor:pointer;background:#f9fafb;color:var(--gray);border:1px solid transparent}
-.sub-tab.sel{background:var(--c1l);color:var(--c1);border-color:#C7D2FE}
-.toolbar{display:flex;padding:8px 16px;gap:8px;align-items:center}
-.toolbar input{flex:1;height:36px;border:1px solid var(--border);border-radius:10px;padding:0 12px;font-size:14px;outline:none;background:#f9fafb}
-.toolbar input:focus{border-color:var(--c1);background:var(--white)}
-.tool-btn{height:36px;padding:0 10px;border:1px solid var(--border);border-radius:10px;background:var(--white);font-size:12px;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:4px}
-.tool-btn:active{background:#f3f4f6}.tool-btn.on{background:var(--c1l);color:var(--c1);border-color:var(--c1)}
-.list{padding:12px 16px;overflow-y:auto;flex:1}
-.card{background:var(--white);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);animation:fadeIn .2s ease;cursor:pointer;position:relative}
-.card .cb{position:absolute;top:14px;left:14px;width:20px;height:20px;display:none;accent-color:var(--c1)}
-.card.batch .cb{display:block}.card.batch{padding-left:44px}.card.sel{background:var(--c1l)}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.card .row1{display:flex;align-items:flex-start;gap:8px}
-.card .avatar{width:40px;height:40px;border-radius:50%;background:var(--c1l);display:flex;align-items:center;justify-content:center;color:var(--c1);font-weight:700;font-size:16px;flex-shrink:0;position:relative}
-.card .online-dot{position:absolute;bottom:0;right:0;width:10px;height:10px;background:var(--green);border:2px solid #fff;border-radius:50%}
-.card .info{flex:1;min-width:0}
-.card .name{font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px}
-.card .status-pill{font-size:10px;padding:1px 6px;border-radius:4px}
-.card .phone{font-size:12px;color:var(--gray);margin-top:2px}
-.card .meta{font-size:11px;color:#9ca3af;margin-top:1px;display:flex;gap:8px}
-.card .tags{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
-.card-tag{font-size:10px;padding:1px 6px;border-radius:4px}
-.card .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.card-act{font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:var(--white);cursor:pointer;white-space:nowrap}
-.card-act.primary{background:var(--c1l);color:var(--c1);border-color:#C7D2FE}.card-act.call{background:#ECFDF5;color:#059669;border-color:#A7F3D0}.card-act.danger{color:var(--gray)}
-.batch-bar{position:fixed;bottom:calc(56px + var(--safe-b));left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:8px 16px;display:none;align-items:center;gap:8px;z-index:99;font-size:13px}
-.batch-bar.show{display:flex}
-.batch-bar .btn{height:34px;padding:0 14px;border-radius:8px;font-size:12px;background:var(--c1);color:#fff;border:none;cursor:pointer}
-.batch-bar .btn.gray{background:#6b7280}
-.detail-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);display:none;flex-direction:column}
-.detail-overlay.show{display:flex}
-.detail-header{background:var(--white);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-.detail-header .back{font-size:20px;color:var(--gray);cursor:pointer;padding:4px}
-.detail-scroll{flex:1;overflow-y:auto}
-.detail-section{background:var(--white);padding:14px 16px;margin-bottom:8px}
-.detail-section .s-title{font-size:12px;color:var(--gray);margin-bottom:8px;font-weight:500}
-.stages{display:flex;flex-wrap:wrap;gap:6px}
-.stage-pill{padding:6px 12px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:var(--white);cursor:pointer;white-space:nowrap;transition:all .15s}
-.stage-pill.cur{background:var(--c1);color:#fff;border-color:var(--c1)}
-.stage-pill.past{background:var(--c1l);color:var(--c1);border-color:#C7D2FE}
-.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px}
-.info-row:not(:last-child){border-bottom:1px solid #f3f4f6}
-.info-row .label{color:var(--gray);flex-shrink:0}.info-row .val{text-align:right;word-break:break-all}
-.info-row .link{color:var(--c1);text-decoration:none;cursor:pointer}
-.detail-tabs{display:flex;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
-.detail-tab{flex:1;text-align:center;padding:10px 0;font-size:13px;color:var(--gray);border-bottom:2px solid transparent;cursor:pointer}
-.detail-tab.sel{color:var(--c1);border-color:var(--c1)}
-.log-item{padding:8px 0;font-size:12px;display:flex;align-items:flex-start;gap:8px}
-.log-item:not(:last-child){border-bottom:1px solid #f3f4f6}
-.log-item .time{color:var(--gray);flex-shrink:0;width:50px}.log-item .act{font-weight:500;flex-shrink:0;width:56px}
-.follow-item{padding:8px 0;font-size:12px}.follow-item:not(:last-child){border-bottom:1px solid #f3f4f6}
-.detail-actions{background:var(--white);border-top:1px solid var(--border);padding:10px 16px calc(10px + var(--safe-b));display:flex;gap:8px;position:sticky;bottom:0}
-.detail-actions button{flex:1;height:44px;border-radius:12px;font-size:14px;font-weight:600;border:none;cursor:pointer}
-.detail-actions .btn-primary{background:var(--c1);color:#fff}.detail-actions .btn-call{background:var(--green);color:#fff}
-.sheet-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.35);display:none;align-items:flex-end}
-.sheet-overlay.show{display:flex}.sheet{background:var(--white);border-radius:20px 20px 0 0;width:100%;max-height:75vh;overflow-y:auto;padding:20px 16px calc(20px + var(--safe-b));animation:slideUp .25s ease}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.sheet .sh-title{font-size:16px;font-weight:700;text-align:center;margin-bottom:16px}
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.stat-card{background:var(--white);border-radius:14px;padding:16px}
-.stat-card .sc-v{font-size:28px;font-weight:700;margin-top:4px}.stat-card .sc-l{font-size:12px;color:var(--gray)}.stat-card .sc-q{font-size:11px;color:var(--green);margin-top:2px}.stat-card .sc-q.down{color:var(--red)}
-.empty{text-align:center;padding:80px 20px;color:#9ca3af;font-size:14px}
-.section-card{background:var(--white);border-radius:14px;padding:0}.section-card .sc-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;font-size:14px;cursor:pointer}.section-card .sc-row:not(:last-child){border-bottom:1px solid #f3f4f6}.section-card .sc-row .arrow{color:#d1d5db;font-size:16px}
-input[type=checkbox]{accent-color:var(--c1);width:18px;height:18px}
-select{padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:var(--white);width:100%}
-textarea{border:1px solid var(--border);border-radius:10px;font-size:14px;padding:10px;width:100%;resize:none;outline:none}textarea:focus{border-color:var(--c1)}
-.btn-full{width:100%;height:44px;border-radius:12px;font-size:14px;font-weight:600;border:none;cursor:pointer;margin-top:12px}
-.btn-primary-full{background:var(--c1);color:#fff}.btn-gray-full{background:#e5e7eb;color:var(--gray);margin-top:8px}
-.mention{padding:10px 16px;background:var(--c1l);border-radius:0;text-align:center;cursor:pointer;font-size:13px;color:var(--c1);font-weight:500}
-.mention.danger{background:#FEF2F2;color:var(--red)}
-.detail-t{font-weight:600;font-size:15px}.detail-s{font-size:12px;color:var(--gray);margin-top:2px}
-.s-fields{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--gray)}
+:root{--p:#3B6CF4;--p2:#1E54D4;--bg:#F7F8FA;--text:#1A1A2E;--sub:#696B80;--line:#DFE0E8;--soft:#EBF1FE;--sh:0 8px 32px rgba(37,99,244,.12)}
+*{box-sizing:border-box}html,body{max-width:100%;overflow-x:hidden}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0,rgba(59,108,244,.13),transparent 32%),var(--bg);font:14px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text)}
+.app{width:100%;max-width:480px;margin:auto;padding:13px 8px 26px;overflow-x:hidden}.hero{padding:2px 4px 4px}.hero-row{display:flex;justify-content:space-between;align-items:center}h1{font-size:21px;line-height:1.08;margin:3px 0 3px;letter-spacing:-.4px}.settings-wrap{position:relative}.settings-btn{min-height:32px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--sub);font-size:13px;font-weight:700;cursor:pointer}.settings-dropdown{display:none;position:absolute;right:0;top:36px;min-width:140px;padding:6px;border-radius:12px;background:#fff;border:1px solid var(--line);box-shadow:0 12px 28px rgba(15,23,42,.14);z-index:100}.settings-dropdown.show{display:block}.settings-item{display:block;width:100%;padding:8px 12px;border:0;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-weight:700;text-align:left;cursor:pointer}.settings-item:hover{background:var(--soft)}
+.main-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:5px 0 7px;padding:4px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.78)}.main-tab{min-height:33px;border-radius:12px;background:transparent;color:var(--sub);font-weight:900;cursor:pointer}.main-tab.active{background:var(--p);color:#fff;box-shadow:0 6px 16px rgba(59,108,244,.22)}.tab-panel{display:block}.tab-panel.hidden-panel{display:none}
+.card{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);overflow:hidden}.sec{padding:8px;border-top:1px solid var(--line)}.sec:first-child{border-top:0}.compact-info{padding-bottom:5px}.title{display:flex;justify-content:space-between;align-items:center;margin:0 0 7px;font-size:14px;font-weight:800}.compact-title{margin-bottom:6px}.hint{font-size:12px;color:var(--sub);font-weight:600}.hidden-hint{display:none}.inline-field{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:center}.inline-field label{margin:0}select,textarea{width:100%;min-height:37px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px;font:inherit;color:var(--text);outline:none}select:focus,textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(59,108,244,.12)}button{min-height:35px;border:0;border-radius:12px;padding:0 13px;font:inherit;font-weight:800;cursor:pointer}.btn{background:var(--p);color:#fff}.btn:hover{background:var(--p2)}.btn2{background:var(--soft);color:var(--p2)}.ghost{background:#F0F1F5;color:#333447}.subtle-edit{min-height:32px;padding:0 10px;background:transparent;color:var(--sub);font-size:12px;text-decoration:underline;text-underline-offset:3px}button:disabled{opacity:.55;cursor:not-allowed}
+.cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}.month{font-weight:850;font-size:13px}.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;width:100%;min-width:0}.wk{text-align:center;color:var(--sub);font-size:11px;font-weight:800}.day{position:relative;aspect-ratio:1/1;min-width:0;padding:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.05;border-radius:12px;background:#F7F8FA;color:#333447;border:1px solid transparent}.day.blank{background:transparent;cursor:default}.day.today{border-color:rgba(59,108,244,.45)}.day.sel{background:var(--p);color:#fff;box-shadow:0 6px 16px rgba(59,108,244,.24)}.day.locked{background:#E5E7EB;color:#9CA3AF;border-color:#D1D5DB}.day.other{color:#fff;border-color:transparent}.day.n-1{background:#64748B}.day.n0{background:#F97316}.day.n1{background:#EF4444}.day.n2{background:#EC4899}.day.n3{background:#8B5CF6}.day.n4{background:#3B82F6}.day.n5{background:#06B6D4}.day.n6{background:#10B981}.day.n7{background:#84CC16}.day.mine-lock{background:#DBEAFE;color:#1D4ED8;border-color:#93C5FD}.day .num{font-weight:800;font-size:11px}.day .owner{font-size:6.5px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}.day.past .owner{color:#9CA3AF}.day.other .owner{color:rgba(255,255,255,.95)}.day.mine-lock .owner,.day.sel .owner{color:inherit}
+.note{margin:3px 0 0;padding:5px;border-radius:12px;background:#FFFBEB;color:#92400E;font-size:11px}.tags{display:flex;flex-wrap:wrap;gap:5px;min-height:29px;padding:5px;border:1px dashed #C0C2CF;border-radius:13px;background:#fff}.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:999px;background:var(--soft);color:var(--p2);font-size:12px;font-weight:800}.tag button{min-height:18px;width:18px;height:18px;padding:0;border-radius:50%;background:#dbe7ff;color:var(--p2)}.actions{display:grid;grid-template-columns:1fr 1fr auto;gap:7px;margin-top:7px;align-items:center}
+.stats-card{margin-top:9px}.month-stat{margin-top:12px;padding:11px;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.07)}.month-stat:first-child{margin-top:0}.stat-head{display:flex;justify-content:space-between;gap:7px;align-items:center;margin:-2px -2px 10px;padding:7px 10px;border-radius:13px;background:linear-gradient(135deg,#F8FAFF,#EEF4FF);box-shadow:inset 0 0 0 1px rgba(59,108,244,.08);font-weight:900}.stat-head small{color:var(--sub);font-weight:600;font-size:11px}.stat-subtitle{margin:13px 0 6px;padding:6px 9px;border-radius:10px;background:#F3F6FB;font-size:13px;font-weight:900;color:#243B6B}.stat-table{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:12px}.stat-table th,.stat-table td{padding:6px 7px;text-align:right;background:#FBFCFF}.stat-table tbody tr{box-shadow:0 2px 8px rgba(15,23,42,.04)}.stat-table tbody td:first-child{border-radius:10px 0 0 10px}.stat-table tbody td:last-child{border-radius:0 10px 10px 0}.stat-table th:first-child,.stat-table td:first-child{text-align:left}.stat-table th{color:var(--sub);font-weight:800;background:transparent;padding-top:4px;padding-bottom:4px}.money.salary{color:#B42318;font-weight:900}.money.pay-default{color:#047857;font-weight:900}.money.pay-low{color:#0891B2;font-weight:900}.money.pay-mid{color:#7C3AED;font-weight:900}.money.pay-high{color:#DC2626;font-weight:900}.money.zero{color:var(--sub);font-weight:900}.month-note{margin-top:9px;padding:7px;border-radius:12px;background:#F7F8FA;color:#4B4D63;font-size:12px;line-height:1.5}.month-note b{color:var(--text)}
+.st-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0 0 8px;padding:3px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.6)}.st-tab{min-height:30px;border-radius:10px;background:transparent;color:var(--sub);font-weight:900;font-size:13px;cursor:pointer}.st-tab.active{background:var(--p);color:#fff;box-shadow:0 4px 12px rgba(59,108,244,.18)}.st-nav{display:flex;justify-content:space-between;align-items:center;margin:0 0 6px}.st-nav-label{font-weight:900;font-size:14px}.mf-wrap{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 10px}.mf-btn{min-height:28px;min-width:36px;padding:0 8px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer}.mf-btn.on{background:var(--p);color:#fff}.mf-btn.off{background:#F0F1F5;color:#333447}.note-btn{min-height:30px;padding:0 9px;border-radius:999px;background:var(--soft);color:var(--p2);font-size:12px}.stat-note{margin-top:5px;color:var(--sub);font-size:10px;line-height:1.36}
+.modal{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center;background:rgba(15,23,42,.42);z-index:10;padding:0}.modal.show{display:flex}.modal-card{width:min(480px,100%);max-height:58vh;overflow:auto;padding:18px;border-radius:22px 22px 0 0;background:#fff;box-shadow:0 -20px 60px rgba(0,0,0,.25)}.modal-card h3{margin:0 0 8px;font-size:18px}.modal-card p{margin:0 0 10px;color:var(--sub);font-size:13px}.modal-card input,.modal-card textarea{width:100%;min-height:37px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit}.modal-card textarea{min-height:100px;resize:vertical}.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.modal-card .field{margin-top:10px}.modal-card label{display:block;margin-bottom:4px;color:#333447;font-size:13px;font-weight:700}
+.member-row{display:grid;grid-template-columns:50px 1fr 80px 36px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid #EEF0F4}.member-row input{min-height:32px}.member-row select{min-height:32px}.del-member{min-height:28px;width:28px;padding:0;border-radius:50%;background:#FEF0F0;color:#B42318;font-size:14px}.add-member-row{margin-top:10px}
+.log-toolbar{display:flex;gap:6px;align-items:center;margin:8px 0}.log-list{max-height:40vh;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:#FBFCFF}.log-item{padding:8px 10px;border-bottom:1px solid #EEF0F4;font-size:12px;line-height:1.5}.log-item:last-child{border-bottom:0}.log-item .lg-h{display:flex;justify-content:space-between;gap:8px;font-weight:800}.log-item .lg-t{color:var(--sub);font-weight:600;font-size:11px;white-space:nowrap}.log-item .lg-d{color:#4B4D63;margin-top:2px;word-break:break-all}.lg-tag{display:inline-block;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;margin-right:5px}.lg-duty{background:#DBEAFE;color:#1D4ED8}.lg-cfg{background:#FEF3C7;color:#92400E}.lg-member{background:#EDE9FE;color:#6D28D9}.lg-note{background:#D1FAE5;color:#047857}.lg-audit{background:#FEE2E2;color:#991B1B}.foot{text-align:center;color:var(--sub);font-size:12px;margin:10px 0 0}.toast{position:fixed;left:50%;bottom:max(22px,env(safe-area-inset-bottom));transform:translateX(-50%) translateY(16px);max-width:calc(100vw - 28px);padding:10px 14px;border-radius:999px;background:rgba(26,26,46,.92);color:#fff;opacity:0;transition:.18s;white-space:nowrap}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:430px){.actions{grid-template-columns:1fr 1fr}.sec{padding:7px 8px}h1{font-size:20px}}
+</style></head><body>
+<main class="app"><header class="hero"><div class="hero-row"><h1>值班登记表</h1><div class="settings-wrap" id="settingsWrap"><button class="settings-btn" id="settingsBtn">⚙ 设置</button><div class="settings-dropdown" id="settingsDrop"><button type="button" class="settings-item" id="cfgBtn">参数设置</button><button type="button" class="settings-item" id="memberBtn">人员管理</button><button type="button" class="settings-item" id="logBtn">操作日志</button></div></div></div></header>
+<div class="main-tabs"><button class="main-tab active" id="tabDutyBtn">值班登记</button><button class="main-tab" id="tabStatsBtn">值班与工资统计</button></div>
+<div class="tab-panel" id="tabDuty"><section class="card"><div class="sec compact-info"><div class="inline-field"><label>姓名</label><select id="name"></select></div><span class="hint hidden-hint" id="draft">未保存</span></div><div class="sec date-sec"><h2 class="title compact-title">选择值班日期<span class="hint" id="modeHint">新增模式</span></h2><div class="cal-head"><button class="ghost" id="prev">上月</button><div class="month" id="month"></div><button class="ghost" id="next">下月</button></div><div class="grid" id="cal"></div><p class="note">蓝色=自己已保存信息，本账号已保存信息在"编辑历史已提交"模式下可修改；</p><div class="field"><label>当前姓名已选日期</label><div class="tags" id="tags"></div></div><div class="actions compact-actions"><button class="btn2" id="save">保存</button><button class="btn" id="submit">提交</button><button class="ghost subtle-edit" id="edit">编辑历史已提交</button></div></div></section></div>
+<div class="tab-panel hidden-panel" id="tabStats"><section class="card stats-card"><div class="sec"><h2 class="title">值班与工资统计<span class="hint">仅统计已提交记录</span></h2><div class="st-tabs"><button class="st-tab active" id="stMonBtn">月度</button><button class="st-tab" id="stYrBtn">年度</button></div><div id="stMonPanel"><div class="st-nav"><button class="ghost" id="stMonPrev">上月</button><span class="st-nav-label" id="stMonth"></span><button class="ghost" id="stMonNext">下月</button></div><div id="statsMonthBox"></div></div><div id="stYrPanel" class="hidden-panel"><div class="st-nav"><button class="ghost" id="stYrPrev">上一年</button><span class="st-nav-label" id="stYear"></span><button class="ghost" id="stYrNext">下一年</button></div><div class="mf-wrap" id="monthFilter"></div><div id="statsYearBox"></div></div></div></section></div>
+<p class="foot">数据保存在 Supabase 云端。</p></main>
+<div class="toast" id="toast"></div>
+<div class="modal" id="noteModal"><div class="modal-card"><h3 id="noteTitle">月度备注</h3><p>备注按月份保存。</p><textarea id="monthNoteInput" placeholder="请输入本月备注"></textarea><div class="modal-actions"><button class="ghost" id="noteCancel">取消</button><button class="btn" id="noteSave">保存备注</button></div></div></div>
+<div class="modal" id="passModal"><div class="modal-card"><h3>输入编辑口令</h3><p>查看数据和点选日期不需要口令；保存、提交、编辑历史已提交需要口令。</p><input id="passInput" type="password" inputmode="numeric" pattern="[0-9]*" placeholder="请输入口令"><div class="modal-actions"><button class="ghost" id="passCancel">取消</button><button class="btn" id="passOk">确认</button></div></div></div>
+<div class="modal" id="cfgModal"><div class="modal-card"><h3>参数设置</h3><div class="field"><label>年假天数（休息天数）</label><input id="cfgLeave" type="number" inputmode="numeric"></div><div class="field"><label>正式员工基础工资（元）</label><input id="cfgBase" type="number" inputmode="numeric"></div><div class="field"><label>休息一天扣减（元）</label><input id="cfgRestD" type="number" inputmode="numeric"></div><div class="field"><label>加班一天增加（元）</label><input id="cfgOvertime" type="number" inputmode="numeric"></div><div class="modal-actions"><button class="ghost" id="cfgCancel">取消</button><button class="btn" id="cfgSave">保存</button></div></div></div>
+<div class="modal" id="logModal"><div class="modal-card"><h3>操作日志</h3><p>记录所有保存、参数与人员变更。仅保留最近 200 条。</p><div class="log-toolbar"><select id="logFilter" style="min-height:32px;font-size:12px"><option value="">全部类型</option><option value="duty">值班保存</option><option value="cfg">参数设置</option><option value="member">人员管理</option><option value="note">月度备注</option><option value="audit">服务端审计</option></select><button class="ghost" id="logRefresh" style="min-height:32px;font-size:12px">刷新</button></div><div id="logList" class="log-list"></div><div class="modal-actions"><button class="ghost" id="logClose">关闭</button><button class="btn2" id="logExport">导出</button></div></div></div><div class="modal" id="memberModal"><div class="modal-card"><h3>人员管理</h3><p>添加、编辑或删除人员。角色：admin=管理员机动, official=正式员工, payer=支付方。</p><div id="memberList"></div><div class="add-member-row"><button class="btn2" id="addMember">+ 添加人员</button></div><div class="modal-actions"><button class="ghost" id="memberCancel">取消</button><button class="btn" id="memberSave">保存</button></div></div></div>
+<script>
+const SUPABASE_URL='https://ltdyppfomthxiprfmxbq.supabase.co',SUPABASE_KEY='sb_publishable_XH7DOUhidJvnt3ELX1pkFg_r5py5EEw',TABLE='duty_records',NOTE_TABLE='duty_month_notes',CK_CFG='duty-cfg-v1',CK_MEM='duty-mem-v1',CK_CACHE='duty-cache-v1',CK_NAME='duty-name-v5',EDIT_PASS='33673472',EDIT_START='2026-08-10',LOG_TABLE='duty_logs';
+const $=id=>document.getElementById(id);
+const DEFAULT_CFG={leave:4,baseSalary:4000,restD:150,overtime:150};let cfg=loadCfg();function numOr(v,d){let n=Number(v);return Number.isFinite(n)?n:d}function sanitizeCfg(c){c=c||{};let o={};for(let k in DEFAULT_CFG)o[k]=numOr(c[k],DEFAULT_CFG[k]);return o}function loadCfg(){try{return sanitizeCfg(Object.assign({},DEFAULT_CFG,JSON.parse(localStorage.getItem(CK_CFG))))}catch(e){return{...DEFAULT_CFG}}}function saveCfg(){localStorage.setItem(CK_CFG,JSON.stringify(cfg))}
+const DEFAULT_MEMBERS=[{code:'-1',label:'-1管理员机动',role:'admin',sort:0,enabled:true},{code:'0',label:'0-合',role:'official',sort:1,enabled:true},{code:'1',label:'1-花',role:'payer',sort:2,enabled:true},{code:'2',label:'2-丽',role:'payer',sort:3,enabled:true},{code:'3',label:'3-铃',role:'payer',sort:4,enabled:true},{code:'4',label:'4-菊',role:'payer',sort:5,enabled:true},{code:'5',label:'5-凤',role:'payer',sort:6,enabled:true},{code:'6',label:'6-莲',role:'payer',sort:7,enabled:true},{code:'7',label:'7-成',role:'payer',sort:8,enabled:true}];
+let members=loadMembers();function loadMembers(){try{let m=JSON.parse(localStorage.getItem(CK_MEM));if(m&&m.length)return m}catch(e){}return DEFAULT_MEMBERS.map(m=>({...m}))}function saveMembers(){localStorage.setItem(CK_MEM,JSON.stringify(members))}function activeNames(){return members.filter(m=>m.enabled).sort((a,b)=>a.sort-b.sort).map(m=>m.code)}function payNames(){return members.filter(m=>m.enabled&&m.role==='payer').map(m=>m.code)}function labelOf(c){let m=members.find(x=>x.code===c);return esc(m?m.label:(c==null?'':c))}function officialCode(){return members.find(m=>m.role==='official')?.code||'0'}function adminCode(){return members.find(m=>m.role==='admin')?.code||'-1'}function populateSelect(){let s=$('name');s.innerHTML='<option value="">请选择姓名</option>';activeNames().forEach(c=>{let o=document.createElement('option');o.value=c;o.textContent=labelOf(c);s.appendChild(o)})}
+function api(p){return SUPABASE_URL+'/rest/v1/'+p}function h(x){return Object.assign({apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},x||{})}async function req(p,opt){let r=await fetch(api(p),Object.assign({},opt||{},{headers:h((opt&&opt.headers)||{})}));let t=await r.text(),j=null;try{j=t?JSON.parse(t):null}catch(e){j=t}if(!r.ok)throw new Error((j&&j.message)||t||'请求失败');return j}
+async function loadAll(){let cached=loadCache();if(cached){allRows=cached.rows||[];monthNotes=cached.notes||[]}let[rows,notes]=await Promise.all([req(TABLE+'?select=name,dates,submitted,updated_at&order=name.asc'),req(NOTE_TABLE+'?select=month,note,updated_at&order=month.asc').catch(()=>[])]);allRows=rows;monthNotes=notes;invalidateCache();saveCache();return allRows}function loadCache(){try{return JSON.parse(localStorage.getItem(CK_CACHE))}catch(e){return null}}function saveCache(){try{localStorage.setItem(CK_CACHE,JSON.stringify({rows:allRows,notes:monthNotes,ts:Date.now()}))}catch(e){}}
+let month=new Date(),sel=new Set(),allRows=[],monthNotes=[],submitted=false,currentName='',editMode=false,editAuthed=sessionStorage.getItem('duty-edit-auth')==='1',passResolve=null,baseline='',editingNoteMonth='',_om=null,_od=null;month.setDate(1);let statsView='month',statsMonth=new Date(),statsYear=new Date().getFullYear(),statsMonths=new Set();statsMonth.setDate(1);
+function pad(n){return String(n).padStart(2,'0')}function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}function fmt(s){let a=s.split('-');return(+a[1])+'月'+(+a[2])+'日'}function today(){return iso(new Date())}function msg(x){let n=$('toast');n.textContent=x;n.classList.add('show');clearTimeout(n.t);n.t=setTimeout(()=>n.classList.remove('show'),2500)}
+function getSavedName(){try{return localStorage.getItem(CK_NAME)||sessionStorage.getItem(CK_NAME)||''}catch(e){return''}}function setSavedName(n){try{localStorage.setItem(CK_NAME,n)}catch(e){}try{sessionStorage.setItem(CK_NAME,n)}catch(e){}}function clearSavedName(){try{localStorage.removeItem(CK_NAME)}catch(e){}try{sessionStorage.removeItem(CK_NAME)}catch(e){}}
+function askPass(){return new Promise(resolve=>{passResolve=resolve;$('passInput').value='';$('passModal').classList.add('show');setTimeout(()=>$('passInput').focus(),30)})}async function ensureEditAuth(){if(editAuthed)return true;return await askPass()}function passDone(ok){if(ok&&$('passInput').value!==EDIT_PASS){msg('口令不正确');$('passInput').focus();return}if(ok){editAuthed=true;sessionStorage.setItem('duty-edit-auth','1')}$('passModal').classList.remove('show');let r=!!ok;if(passResolve){passResolve(r);passResolve=null}}
+function fromCloud(r){return{name:r.name,dates:r.dates||[],submitted:!!r.submitted,updatedAt:r.updated_at}}function rowOf(n){return allRows.find(r=>r.name===n)}function occupiedMap(){if(_om)return _om;let m={};allRows.forEach(r=>{(r.dates||[]).forEach(d=>{if(!m[d])m[d]=[];m[d].push(r.name)})});_om=m;return m}function otherDates(){if(_od&&_od._for===currentName)return _od;let s=new Set();allRows.forEach(r=>{if(r.name!==currentName)(r.dates||[]).forEach(d=>s.add(d))});s._for=currentName;_od=s;return s}function invalidateCache(){_om=null;_od=null}
+async function loadName(n){currentName=n;setSavedName(n);if(!allRows.length)await loadAll();let r=rowOf(n);setData(r?fromCloud(r):{name:n});editMode=false;render();msg('已切换到：'+labelOf(n))}function data(){return{name:currentName,dates:[...sel].sort(),submitted,updatedAt:new Date().toISOString()}}function snapshot(){return JSON.stringify({name:currentName,dates:[...sel].sort(),submitted})}function hasChanged(){return snapshot()!==baseline}function setData(d){d=d||{};$('name').value=d.name||currentName||'';currentName=$('name').value;sel=new Set(d.dates||[]);submitted=!!d.submitted;baseline=snapshot()}function state(ov){$('draft').textContent=ov||(currentName?(editMode?'编辑模式':submitted?'已提交':'未保存'):'请选择姓名')}
+async function saveCloud(silent){if(!currentName)return msg('请先选择姓名');if(!hasChanged())return msg('未变更内容无需重复保存');if(!(await ensureEditAuth()))return;state('同步中...');try{let d=data();await req(TABLE,{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({name:d.name,dept:'',duty_type:'',remark:'',dates:d.dates,submitted:d.submitted,updated_at:new Date().toISOString()})});await loadAll();let r=rowOf(currentName);if(r)setData(fromCloud(r));baseline=snapshot();render();addLog('duty',d.submitted?'提交值班':'保存值班','共 '+d.dates.length+' 天：'+(d.dates.join('、')||'(无)'));if(!silent)msg('已保存到云端')}catch(e){msg('保存失败：'+e.message);state()}}
+function canClick(s,isMine,isOther,isPast){if(!currentName)return false;if(isOther)return false;if(s<EDIT_START)return false;if(isMine&&!submitted)return true;if(isMine)return editMode;if(isPast)return editMode;return true}
+function renderCal(){let c=$('cal'),y=month.getFullYear(),m=month.getMonth(),td=today(),od=otherDates(),om=occupiedMap();$('month').textContent=y+'年'+(m+1)+'月';let h='<div class="wk">日</div><div class="wk">一</div><div class="wk">二</div><div class="wk">三</div><div class="wk">四</div><div class="wk">五</div><div class="wk">六</div>';let first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate(),prefix='';for(let i=0;i<first;i++)prefix+='<button class="day blank" disabled></button>';let body='',base=y+'-'+pad(m+1)+'-';for(let d=1;d<=days;d++){let s=base+pad(d),mine=sel.has(s),other=od.has(s),past=s<td,owners=(om[s]||[]).map(labelOf).join('、'),ok=canClick(s,mine,other,past),cls='day'+(s===td?' today':'')+(mine?' sel':'')+(past?' past':'')+(other?' other':'')+(other?ownerClass(om[s]):'')+(mine&&!editMode?' mine-lock':'')+(!ok?' locked':'');body+=`<button type="button" class="${cls}"${ok?'':' disabled'} title="${owners?'预占：'+owners:(s<EDIT_START?'早于可编辑起点':'可选择')}" data-d="${s}"><span class="num">${d}</span><span class="owner">${owners||(s<EDIT_START?'不可改':past?(editMode?'可编辑':'历史'):'')}</span></button>`}c.innerHTML=h+prefix+body;c.querySelectorAll('button[data-d]').forEach(b=>b.onclick=()=>toggle(b.dataset.d))}
+function ownerClass(names){if(!names||!names.length)return'';return' n'+names[0]}function toggle(s){if(sel.has(s))sel.delete(s);else sel.add(s);submitted=false;render()}function renderTags(){let b=$('tags'),arr=[...sel].sort();b.innerHTML='';if(!currentName){b.innerHTML='<span class="hint">请先选择姓名</span>';return}if(!arr.length){b.innerHTML='<span class="hint">暂未选择日期</span>';return}arr.forEach(s=>{let t=document.createElement('span');t.className='tag';t.innerHTML=fmt(s)+(editMode?' <button type="button">×</button>':'');if(editMode)t.querySelector('button').onclick=()=>toggle(s);b.appendChild(t)})}
+function countFor(rows,name,mon){let r=rows.find(x=>x.name===name);return r?(r.dates||[]).filter(x=>typeof x==='string'&&x.startsWith(mon+'-')).length:0}function countForUntil(rows,name,mon,cutoff){if(cutoff<=0)return 0;let r=rows.find(x=>x.name===name);if(!r)return 0;return(r.dates||[]).filter(x=>typeof x==='string'&&x.startsWith(mon+'-')&&(+x.slice(8,10))<=cutoff).length}
+function renderStats(){renderStatsView()}
+function renderMonthStat(mon,rows){cfg=sanitizeCfg(cfg);let y=+mon.slice(0,4),m=+mon.slice(5,7),daysInMonth=new Date(y,m,0).getDate(),currentMon=today().slice(0,7),todayDay=+today().slice(8,10),cutoff=mon<currentMon?daysInMonth:(mon===currentMon?todayDay:0),names=activeNames(),counts={},currentCounts={};names.forEach(n=>{counts[n]=countFor(rows,n,mon);currentCounts[n]=countForUntil(rows,n,mon,cutoff)});let total=names.reduce((a,n)=>a+(counts[n]||0),0),totalForRatio=total||1,offCode=officialCode(),admCode=adminCode(),pNames=payNames();let expected0=daysInMonth-cfg.leave,current0Days=currentCounts[offCode]||0,monthEndNon0Days=names.filter(n=>n!==offCode).reduce((a,n)=>a+(counts[n]||0),0),hasAny=total>0,isFuture=cutoff<=0,expectedCur=expected0*(cutoff/daysInMonth),currentWage0=cfg.baseSalary+(current0Days-expectedCur)*cfg.restD,monthEndWage0=cfg.baseSalary+(cfg.leave*cfg.overtime)-monthEndNon0Days*cfg.restD;let adminDays=counts[admCode]||0,currentAdminDays=currentCounts[admCode]||0,pL=Math.max(pNames.length,1),adminShare=adminDays*cfg.overtime/pL,currentAdminShare=currentAdminDays*cfg.overtime/pL,base=cfg.baseSalary+(cfg.leave*cfg.overtime),payBase=base/pL,currentBase=payBase*(cutoff/daysInMonth),maxPay=pNames.length?Math.ceil(payBase):0;let table0=`<table class="stat-table"><thead><tr><th>人员</th><th>天数</th><th>比例</th><th>当前工资</th><th>月底工资</th></tr></thead><tbody><tr><td>${labelOf(offCode)}</td><td>${counts[offCode]||0}</td><td>${ratio(counts[offCode]||0,totalForRatio)}</td><td class="money salary">${isFuture||!hasAny?'—':money(currentWage0)}</td><td class="money salary">${!hasAny?'—':money(monthEndWage0)}</td></tr></tbody></table>`;let admin=`<tr><td>${labelOf(admCode)}</td><td>${adminDays}</td><td>${ratio(adminDays,totalForRatio)}</td><td>—</td><td>—</td></tr>`;let payRows=pNames.map(n=>{let cPay=-(currentBase-(currentCounts[n]||0)*cfg.overtime-currentAdminShare);let mPay=-(payBase-(counts[n]||0)*cfg.overtime-adminShare);return{name:n,count:counts[n]||0,currentPay:cPay,monthPay:mPay}}).sort((a,b)=>b.monthPay-a.monthPay);let payerRows=payRows.map(r=>`<tr><td>${labelOf(r.name)}</td><td>${r.count}</td><td>${ratio(r.count,totalForRatio)}</td><td class="money ${payClass(r.currentPay)}">${isFuture||!hasAny?'—':money(r.currentPay)}</td><td class="money ${payClass(r.monthPay)}">${!hasAny?'—':money(r.monthPay)}</td></tr>`).join('');let note=getMonthNote(mon);return`<div class="month-stat"><div class="stat-head"><span>${y}年${m}月</span><small>${isFuture?'未来月份·尚未发生':(!hasAny?'本月暂无提交记录':'截止到 '+today())}</small></div><div class="stat-subtitle">${labelOf(offCode)}正式员工工资（最大工资 ¥${base}）</div>${table0}<div class="stat-subtitle">${labelOf(admCode)} / ${pNames.map(labelOf).join('')}支付统计（最大支付 ¥${maxPay}）</div><table class="stat-table"><thead><tr><th>人员</th><th>天数</th><th>比例</th><th>当前需付</th><th>月底需付</th></tr></thead><tbody>${admin}${payerRows}</tbody></table><div class="month-note"><b>月度备注：</b>${note||'暂无'}<br><button class="note-btn" onclick="openNote('${mon}')">编辑本月备注</button></div><div class="stat-note">计算规则：当前工资 = ${cfg.baseSalary} + (当前已发生${labelOf(offCode)}值班天数 - (本月天数-${cfg.leave})) × ${cfg.restD}（应值班天数按已过天数比例折算为 ${Math.round(expectedCur*10)/10} 天）；月底工资 = ${base} - 本月已发生和已标记的非"${labelOf(offCode)}"日期数 × ${cfg.restD}。未来月份不计算「当前」列，无任何提交记录的月份两列均不计算，均以「—」展示。支付方分摊基数 = ${base} ÷ ${pL} 人 = ¥${Math.round(payBase*100)/100}；月底需付 = 分摊基数 - 本人值班天数 × ${cfg.overtime} - ${labelOf(admCode)}天数 × ${cfg.overtime} ÷ ${pL}，取负数展示。当前需付把分摊基数按 (已过天数/本月天数) 折算。${labelOf(admCode)}只展示天数和比例，不展示金额。</div></div>`}
+const CK_LOG='duty-log-v1';let logCloudOK=true;
+function localLogs(){try{return JSON.parse(localStorage.getItem(CK_LOG))||[]}catch(e){return[]}}
+function pushLocalLog(e){try{let a=localLogs();a.unshift(e);localStorage.setItem(CK_LOG,JSON.stringify(a.slice(0,200)))}catch(e){}}
+async function addLog(kind,action,detail){let e={source:'app',kind:kind,actor:currentName?labelOf(currentName):'(未选择)',action:action,detail:detail||'',created_at:new Date().toISOString()};pushLocalLog(e);if(!logCloudOK)return;try{await req(LOG_TABLE,{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(e)})}catch(err){logCloudOK=false}}
+async function fetchLogs(){let local=localLogs();let cloud=[];try{cloud=await req(LOG_TABLE+'?select=source,kind,actor,action,detail,client_ip,created_at&order=created_at.desc&limit=200')||[]}catch(e){logCloudOK=false}if(!cloud.length)return{rows:local,src:'local'};let seen=new Set(cloud.map(r=>r.created_at+'|'+r.action));local.forEach(r=>{if(!seen.has(r.created_at+'|'+r.action))cloud.push(r)});cloud.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));return{rows:cloud.slice(0,200),src:'cloud'}}
+function fmtLogTime(s){try{if(!s)return'-';let d=new Date(s);if(isNaN(d.getTime()))return String(s);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}catch(e){return s||''}}
+const LOG_KIND_LABEL={duty:'值班保存',cfg:'参数设置',member:'人员管理',note:'月度备注',audit:'服务端审计'};
+let _logRows=[];
+async function openLogModal(){if(!(await ensureEditAuth()))return;$('logModal').classList.add('show');$('logList').innerHTML='<div class="log-item">加载中...</div>';let r=await fetchLogs();_logRows=r.rows;renderLogList(r.src)}
+function closeLogModal(){$('logModal').classList.remove('show')}
+function renderLogList(src){let f=$('logFilter').value,rows=f?_logRows.filter(r=>r.kind===f):_logRows;let box=$('logList');if(!rows.length){box.innerHTML='<div class="log-item" style="color:var(--sub)">暂无日志记录'+(src==='local'?'（云端日志表未建，当前仅本机记录）':'')+'</div>';return}let head=src==='local'?'<div class="log-item" style="background:#FFFBEB;color:#92400E">云端日志表 duty_logs 不存在，当前仅显示本机记录，换设备不可见。</div>':'';box.innerHTML=head+rows.map(r=>'<div class="log-item"><div class="lg-h"><span><span class="lg-tag lg-'+(r.kind||'duty')+'">'+(LOG_KIND_LABEL[r.kind]||r.kind||'其他')+'</span>'+esc(r.actor||'')+' · '+esc(r.action||'')+'</span><span class="lg-t">'+fmtLogTime(r.created_at)+'</span></div>'+(r.detail?'<div class="lg-d">'+esc(r.detail)+'</div>':'')+(r.source==='db'?'<div class="lg-d" style="color:var(--sub);font-size:11px">来源 IP：'+esc(r.client_ip||'unknown')+'</div>':'')+'</div>').join('')}
+function esc(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function exportLogs(){let f=$('logFilter').value,rows=f?_logRows.filter(r=>r.kind===f):_logRows;let csv='\uFEFF时间,类型,操作人,动作,详情\n'+rows.map(r=>[fmtLogTime(r.created_at),LOG_KIND_LABEL[r.kind]||r.kind||'',r.actor||'',r.action||'',(r.detail||'').replace(/"/g,'""')].map(x=>'"'+x+'"').join(',')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='duty-logs-'+today()+'.csv';a.click();msg('日志已导出')}
+function getMonthNote(mon){let r=monthNotes.find(x=>x.month===mon);return r&&r.note?r.note:''}async function openNote(mon){if(!(await ensureEditAuth()))return;editingNoteMonth=mon;$('noteTitle').textContent=mon+' 月度备注';$('monthNoteInput').value=getMonthNote(mon);$('noteModal').classList.add('show');setTimeout(()=>$('monthNoteInput').focus(),30)}function closeNote(){$('noteModal').classList.remove('show');editingNoteMonth=''}async function saveMonthNote(){if(!editingNoteMonth)return;let note=$('monthNoteInput').value.trim();try{await req(NOTE_TABLE,{method:'POST',headers:{Prefer:'resolution=merge-duplicates,return=representation'},body:JSON.stringify({month:editingNoteMonth,note:note,updated_at:new Date().toISOString()})});await loadAll();addLog('note','保存月度备注',editingNoteMonth+'：'+(note||'(清空)'));closeNote();renderStats();msg('月度备注已保存')}catch(e){msg('备注保存失败：'+e.message)}}
+function ratio(x,total){return total?((x/total)*100).toFixed(1)+'%':'0.0%'}function money(x){let sign=x<0?'-':x>0?'+':'';let v=Math.abs(x);return sign+'¥'+(Math.round(v*100)/100).toFixed(Number.isInteger(Math.round(v*100)/100)?0:2)}function payClass(x){let v=Math.abs(x);if(v===0)return'zero';if(v<300)return'pay-low';if(v<600)return'pay-default';if(v<900)return'pay-mid';return'pay-high'}function switchMainTab(which){let duty=which==='duty';$('tabDuty').classList.toggle('hidden-panel',!duty);$('tabStats').classList.toggle('hidden-panel',duty);$('tabDutyBtn').classList.toggle('active',duty);$('tabStatsBtn').classList.toggle('active',!duty);if(!duty)renderStatsView()}
+async function openCfgModal(){if(!(await ensureEditAuth()))return;$('cfgLeave').value=cfg.leave;$('cfgBase').value=cfg.baseSalary;$('cfgRestD').value=cfg.restD;$('cfgOvertime').value=cfg.overtime;$('cfgModal').classList.add('show')}function closeCfgModal(){$('cfgModal').classList.remove('show')}function saveCfgModal(){let before=JSON.stringify(cfg);let nv=sanitizeCfg({leave:$('cfgLeave').value,baseSalary:$('cfgBase').value,restD:$('cfgRestD').value,overtime:$('cfgOvertime').value});let LB={leave:'年假天数',baseSalary:'基础工资',restD:'休息扣减',overtime:'加班增加'};let diff=Object.keys(nv).filter(k=>cfg[k]!==nv[k]).map(k=>LB[k]+' '+cfg[k]+'→'+nv[k]);Object.assign(cfg,nv);saveCfg();closeCfgModal();renderStats();if(diff.length)addLog('cfg','修改参数',diff.join('，'));msg(diff.length?'参数已保存':'参数无变更')}
+async function openMemberModal(){if(!(await ensureEditAuth()))return;renderMemberList();$('memberModal').classList.add('show')}function closeMemberModal(){$('memberModal').classList.remove('show')}function renderMemberList(){let box=$('memberList');box.innerHTML='';members.forEach((m,i)=>{let row=document.createElement('div');row.className='member-row';row.innerHTML=`<input value="${m.code}" placeholder="编码" style="min-height:32px;font-size:12px"><input value="${m.label}" placeholder="显示名" style="min-height:32px;font-size:12px"><select style="min-height:32px;font-size:12px"><option value="admin"${m.role==='admin'?' selected':''}>管理员</option><option value="official"${m.role==='official'?' selected':''}>正式员工</option><option value="payer"${m.role==='payer'?' selected':''}>支付方</option></select><button class="del-member" data-idx="${i}">×</button>`;row.querySelector('.del-member').onclick=function(){members.splice(i,1);renderMemberList()};box.appendChild(row)})}function addMemberRow(){members.push({code:String(members.length),label:'',role:'payer',sort:members.length,enabled:true});renderMemberList()}function saveMemberModal(){let newMembers=[];$('memberList').querySelectorAll('.member-row').forEach(row=>{let inputs=row.querySelectorAll('input');let sel=row.querySelector('select');newMembers.push({code:inputs[0].value.trim(),label:inputs[1].value.trim()||inputs[0].value.trim(),role:sel.value,sort:newMembers.length,enabled:true})});let bef=members.map(m=>m.code+':'+m.label+'('+m.role+')').join('|');let aft=newMembers.map(m=>m.code+':'+m.label+'('+m.role+')').join('|');members=newMembers;saveMembers();populateSelect();if(bef!==aft)addLog('member','修改人员','原：'+bef+' → 新：'+aft);if(currentName&&!activeNames().includes(currentName)){currentName='';sel.clear();submitted=false;baseline=''}closeMemberModal();render();msg('人员已保存')}
+function getStatsRows(){let rows=allRows.map(r=>({name:r.name,dates:r.dates||[],submitted:!!r.submitted}));let d=data();if(d.name){rows=rows.filter(r=>r.name!==d.name);if(d.submitted)rows.push({name:d.name,dates:d.dates,submitted:true})}return rows.filter(r=>r.submitted)}
 
-</style>
-</head><body>
-<div id="pageList" class="page on"><div class="header"><div class="top-tabs"><button onclick="mainTab='mine';render()" id="tabMine" class="top-tab sel">我的线索</button><button onclick="mainTab='pool';render()" id="tabPool" class="top-tab">线索公海</button></div><div class="sub-tabs"><button onclick="subFilter='all';render()" id="stAll" class="sub-tab sel">全部<span id="cAll" class="ml-1"></span></button><button onclick="subFilter='nofollow';render()" id="stNf" class="sub-tab">未跟进<span id="cNf" class="ml-1"></span></button><button onclick="subFilter='nomark';render()" id="stNm" class="sub-tab">跟进后未打标<span id="cNm" class="ml-1"></span></button></div><div class="toolbar"><input id="searchInput" placeholder="搜索姓名/手机号/线索ID" oninput="onSearch()"><button class="tool-btn" id="encBtn" onclick="encrypted=!encrypted;render();updateEncBtn()">🔒</button><button class="tool-btn" onclick="openFilter()">筛选</button><button class="tool-btn" id="batchBtn" onclick="toggleBatch()">批量</button></div></div><div id="listContainer" class="list"></div></div>
-<div id="pageData" class="page"><div class="header" style="padding:12px 16px"><span style="font-weight:600;font-size:16px">数据概览</span></div><div id="dataContent" style="flex:1;overflow-y:auto;padding:12px 16px"></div></div>
-<div id="pageMe" class="page"><div class="header" style="padding:12px 16px"><span style="font-weight:600;font-size:16px">我的</span></div><div id="meContent" style="flex:1;overflow-y:auto"></div></div>
-<div class="navbar"><button onclick="switchPage('pageList')" id="navList" class="nav-item cur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>线索管理</button><button onclick="switchPage('pageData')" id="navData" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>数据概览</button><button onclick="switchPage('pageMe')" id="navMe" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 10-16 0"/></svg>我的</button></div>
-<div id="batchBar" class="batch-bar"><span id="batchCount">已选0条</span><span style="flex:1"></span><button class="btn" onclick="batchStatus()">改进度</button><button class="btn" onclick="batchTag()">打标签</button><button class="btn" onclick="batchAssign()">分配</button></div>
-<div id="detailOverlay" class="detail-overlay"><div id="detailContent"></div></div>
-<div id="sheetOverlay" class="sheet-overlay" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheetBody"></div></div>
-<script>
-var SUPABASE_URL='https://iduevkncajhkomeddeth.supabase.co',SUPABASE_KEY='sb_publishable_7APvWkNtTpyG_1T9owYgBw_nNVh466j'
-var db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY)
-var USER='admin001',ROLE='advertiser'
-var mainTab='mine',subFilter='all',searchQ='',encrypted=true,batchMode=false
-var selected=new Set(),clueCache=[],tagCache=[],staffCache=[],timer=null
-var detailTab='info',detailClue=null,detailFollows=[],detailRemarks=[],detailLogs=[],trendChart=null
-var STAGES=['new','called','following','phone_connected','wechat_added','chatting','high_intent','visited','deposit','deal','no_intent']
-var STG={new:'待联系',called:'已拨打',following:'待持续跟进',phone_connected:'电话已建联',wechat_added:'微信加粉',chatting:'用户开口聊天',high_intent:'高意向',visited:'到店',deposit:'交定金',deal:'成交',no_intent:'无意向'}
-var NOF=['new'],NOM=STAGES.filter(function(s){return s!=='new'&&s!=='no_intent'}),TYPES={form:'表单',chat:'私信',phone:'电话'},TRAFFIC={live:'直播',video:'视频'}
-var CALL_MAP={connected:'接通',no_answer:'未接',busy:'忙线',wrong_number:'空号'}
-var ACT_MAP={assign:'分配',claim:'认领',abandon:'放弃',status_change:'改进度',tag:'打标',untag:'去标',call:'通话',remark:'备注'}
-</script>
-<script>
-function switchPage(p){
-  document.querySelectorAll('.page').forEach(function(x){x.classList.remove('on')});
-  document.getElementById(p).classList.add('on');
-  document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('cur')});
-  if(p==='pageList'){document.getElementById('navList').classList.add('cur');render()}
-  if(p==='pageData'){document.getElementById('navData').classList.add('cur');loadData()}
-  if(p==='pageMe'){document.getElementById('navMe').classList.add('cur');loadMe()}
-}
-function updateEncBtn(){document.getElementById('encBtn').textContent=encrypted?'\uD83D\uDD12':'\uD83D\uDC41'}
-function mp(p){if(!p)return'无';return encrypted?p.replace(/(\d{3})\d{4}(\d{4})/,'$1****$2'):p}
-function mn(n){if(!n)return'未命名';return encrypted?n[0]+'**':n}
-function ft(t){if(!t)return'-';var d=new Date(t),n=new Date(),ms=n-d;if(ms<6e4)return'刚刚';if(ms<36e5)return Math.floor(ms/6e4)+'分钟前';if(ms<864e5)return Math.floor(ms/36e5)+'小时前';if(ms<1728e5)return'昨天';return(d.getMonth()+1)+'/'+d.getDate()}
-function onSearch(){clearTimeout(timer);timer=setTimeout(function(){searchQ=document.getElementById('searchInput').value.trim();render()},300)}
-function toggleBatch(){batchMode=!batchMode;selected.clear();document.getElementById('batchBtn').classList.toggle('on',batchMode);var b=document.getElementById('batchBar');if(batchMode)b.classList.add('show');else b.classList.remove('show');updateBatchCount();render()}
-function toggleSelect(id){if(selected.has(id))selected.delete(id);else selected.add(id);updateBatchCount();render()}
-function updateBatchCount(){document.getElementById('batchCount').textContent='已选'+selected.size+'条'}
-async function loadPrefs(){
-  var a=await db.from('clue_tags').select('*').order('sort_order');
-  var b=await db.from('staff').select('id,name').eq('is_active',true);
-  tagCache=a.data||[];staffCache=b.data||[]
-}
-loadPrefs()
-</script>
-<script>
-async function render(){
-  var q=db.from('clues').select('*').order('created_at',{ascending:false}).limit(200);
-  if(mainTab==='mine')q=q.not('assigned_to','is',null);
-  if(mainTab==='pool')q=q.is('assigned_to',null);
-  if(subFilter==='nofollow')q=q.in('status',NOF);
-  if(subFilter==='nomark')q=q.in('status',NOM).eq('is_marked',false);
-  if(searchQ)q=q.or('name.ilike.%'+searchQ+'%,phone.ilike.%'+searchQ+'%,clue_id.ilike.%'+searchQ+'%');
-  var data=await q;clueCache=data.data||[];var d=clueCache;
-  document.getElementById('cAll').textContent=d.length;
-  document.getElementById('cNf').textContent=d.filter(function(c){return NOF.indexOf(c.status)>=0}).length;
-  document.getElementById('cNm').textContent=d.filter(function(c){return NOM.indexOf(c.status)>=0&&!c.is_marked}).length;
-  document.getElementById('tabMine').className='top-tab'+(mainTab==='mine'?' sel':'');
-  document.getElementById('tabPool').className='top-tab'+(mainTab==='pool'?' sel':'');
-  var tabs=document.querySelectorAll('.sub-tab');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('sel');
-  if(subFilter==='all')document.getElementById('stAll').classList.add('sel');
-  else if(subFilter==='nofollow')document.getElementById('stNf').classList.add('sel');
-  else if(subFilter==='nomark')document.getElementById('stNm').classList.add('sel');
-  var c=document.getElementById('listContainer');
-  if(!d.length){c.innerHTML='<div class="empty">暂无线索</div>';return}
-  var isMine=mainTab==='mine',parts=[];
-  for(var i=0;i<d.length;i++){
-    var cl=d[i],tg=[],tagHtml='',j,t,cid=cl.id,stg=STG[cl.status]||cl.status;
-    for(j=0;j<(cl.tag_ids||[]).length;j++){var tid=cl.tag_ids[j];for(var k=0;k<tagCache.length;k++){if(tagCache[k].id===tid){tg.push(tagCache[k]);break}}}
-    for(j=0;j<tg.length;j++){tagHtml+='<span class="card-tag" style="background:'+tg[j].color+'18;color:'+tg[j].color+'">'+tg[j].name+'</span>'}
-    var selClass=selected.has(cid)?' sel':'',onlineDot=cl.is_online?'<span class="online-dot"></span>':'',ct=TYPES[cl.clue_type]||cl.clue_type||'',nm=mn(cl.name),ph=mp(cl.phone);
-    var btns=isMine?'<button class="card-act" onclick="event.stopPropagation();sheetStatus(\''+cid+'\')">改进度</button><button class="card-act" onclick="event.stopPropagation();sheetTag(\''+cid+'\')">打标签</button><button class="card-act call" onclick="event.stopPropagation();dial(\''+cl.phone+'\')">\uD83D\uDCDE</button><button class="card-act danger" onclick="event.stopPropagation();abandon(\''+cid+'\')">放弃</button>':'<button class="card-act primary" onclick="event.stopPropagation();doClaim(\''+cid+'\')">认领</button><button class="card-act primary" onclick="event.stopPropagation();sheetAssign(\''+cid+'\')">分配</button>';
-    var rawName=cl.name||'',escapedName=rawName.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-    parts.push('<div class="card batch'+selClass+'" onclick="'+(batchMode?'toggleSelect(\''+cid+'\')':'openDetail(\''+cid+'\')')+'">'+
-      (batchMode?'<input type="checkbox" class="cb" '+(selected.has(cid)?'checked':'')+' onchange="event.stopPropagation();toggleSelect(\''+cid+'\')">':'')+
-      '<div class="row1"><div class="avatar">'+rawName.slice(0,1)+onlineDot+'</div><div class="info"><div class="name">'+nm+' <span class="status-pill" style="background:#f3f4f6;color:#6b7280">'+stg+'</span></div><div class="phone">'+ph+'</div><div class="meta"><span>'+ft(cl.created_at)+'</span>'+(ct?'<span>'+ct+'</span>':'')+'</div>'+(tagHtml?'<div class="tags">'+tagHtml+'</div>':'')+'</div></div><div class="actions">'+btns+'</div></div>')
+function switchStatsTab(v){statsView=v;$('stMonBtn').classList.toggle('active',v==='month');$('stYrBtn').classList.toggle('active',v==='year');$('stMonPanel').classList.toggle('hidden-panel',v!=='month');$('stYrPanel').classList.toggle('hidden-panel',v!=='year');renderStatsView()}
+
+function renderStatsView(){if(statsView==='month')renderMonthView();else renderYearView()}
+
+function renderMonthView(){let box=$('statsMonthBox');if(!box)return;let rows=getStatsRows();let mon=statsMonth.getFullYear()+'-'+pad(statsMonth.getMonth()+1);$('stMonth').textContent=statsMonth.getFullYear()+'年'+(statsMonth.getMonth()+1)+'月';box.innerHTML=renderMonthStat(mon,rows)}
+
+function renderYearView(){
+  cfg=sanitizeCfg(cfg);
+  let box=$('statsYearBox');if(!box)return;
+  let rows=getStatsRows(),yr=statsYear;
+  $('stYear').textContent=yr+'年';
+  let dataMonths=new Set();
+  rows.forEach(r=>(r.dates||[]).forEach(x=>{if(x.startsWith(yr+'-'))dataMonths.add(x.slice(0,7))}));
+  dataMonths.add(today().slice(0,7));
+  if(!statsMonths.size)[...dataMonths].filter(m=>m.startsWith(yr+'-')).forEach(m=>statsMonths.add(m));
+  let mf=$('monthFilter'),btns='';
+  for(let m=1;m<=12;m++){
+    let key=yr+'-'+pad(m),hasData=dataMonths.has(key),on=statsMonths.has(key);
+    btns+=`<button class="mf-btn ${on?'on':'off'}" data-m="${key}"${!hasData&&!on?' style="opacity:.45"':''}>${m}月</button>`;
   }
-  c.innerHTML=parts.join('')
+  mf.innerHTML=btns;
+  mf.querySelectorAll('.mf-btn').forEach(b=>b.onclick=()=>{
+    let m=b.dataset.m;if(statsMonths.has(m))statsMonths.delete(m);else statsMonths.add(m);renderYearView();
+  });
+  let selMons=[...statsMonths].filter(m=>m.startsWith(yr+'-')).sort();
+  if(!selMons.length){box.innerHTML='<div class="hint" style="padding:12px">请选择至少一个月份</div>';return}
+  let names=activeNames(),offCode=officialCode(),admCode=adminCode(),pNames=payNames();
+  let monthData={};
+  selMons.forEach(mon=>{
+    let y2=+mon.slice(0,4),m2=+mon.slice(5,7),dim=new Date(y2,m2,0).getDate();
+    let curMon=today().slice(0,7),td=+today().slice(8,10);
+    let cutoff=mon<curMon?dim:(mon===curMon?td:0);
+    let counts={},curCounts={};
+    names.forEach(n=>{counts[n]=countFor(rows,n,mon);curCounts[n]=countForUntil(rows,n,mon,cutoff)});
+    let exp=dim-cfg.leave,curOD=curCounts[offCode]||0;
+    let nonOD=names.filter(n=>n!==offCode).reduce((a,n)=>a+(counts[n]||0),0);
+    let mTot=names.reduce((a,n)=>a+(counts[n]||0),0);
+    let mHasAny=mTot>0,mFuture=cutoff<=0;
+    let expCur=exp*(cutoff/dim);
+    let curWOff=(mFuture||!mHasAny)?0:cfg.baseSalary+(curOD-expCur)*cfg.restD;
+    let endWOff=!mHasAny?0:cfg.baseSalary+(cfg.leave*cfg.overtime)-nonOD*cfg.restD;
+    let adD=counts[admCode]||0,cadD=curCounts[admCode]||0,pL=Math.max(pNames.length,1);
+    let adS=adD*cfg.overtime/pL,cadS=cadD*cfg.overtime/pL;
+    let base=cfg.baseSalary+(cfg.leave*cfg.overtime);
+    let payBase=base/pL;
+    let curB=payBase*(cutoff/dim);
+    let pays=pNames.map(n=>({name:n,count:counts[n]||0,curCount:curCounts[n]||0,
+      cPay:(mFuture||!mHasAny)?0:-(curB-(curCounts[n]||0)*cfg.overtime-cadS),
+      mPay:!mHasAny?0:-(payBase-(counts[n]||0)*cfg.overtime-adS)}));
+    monthData[mon]={countsOff:counts[offCode]||0,curOD,curWOff,endWOff,adD,adS,pays,dim,mHasAny,mFuture,
+      total:names.reduce((a,n)=>a+(counts[n]||0),0)};
+  });
+  let aOD=0,aCOD=0,aCWO=0,aEWO=0,aAD=0,ap={};
+  pNames.forEach(n=>ap[n]={count:0,curCount:0,cPay:0,mPay:0});
+  Object.values(monthData).forEach(md=>{
+    aOD+=md.countsOff;aCOD+=md.curOD;aCWO+=md.curWOff;aEWO+=md.endWOff;aAD+=md.adD;
+    md.pays.forEach(p=>{ap[p.name].count+=p.count;ap[p.name].curCount+=p.curCount;
+      ap[p.name].cPay+=p.cPay;ap[p.name].mPay+=p.mPay});
+  });
+  let aTot=aOD+aAD+pNames.reduce((a,n)=>a+ap[n].count,0),aTR=aTot||1;
+  let offT=`<table class="stat-table"><thead><tr><th>人员</th><th>累计天数</th><th>比例</th><th>当前累计工资</th><th>预计年度工资</th></tr></thead><tbody><tr><td>${labelOf(offCode)}</td><td>${aOD}</td><td>${ratio(aOD,aTR)}</td><td class="money salary">${money(aCWO)}</td><td class="money salary">${money(aEWO)}</td></tr></tbody></table>`;
+  let admR=`<tr><td>${labelOf(admCode)}</td><td>${aAD}</td><td>${ratio(aAD,aTR)}</td><td>—</td><td>—</td></tr>`;
+  let payR=Object.entries(ap).sort((a,b)=>b[1].mPay-a[1].mPay).map(([n,p])=>`<tr><td>${labelOf(n)}</td><td>${p.count}</td><td>${ratio(p.count,aTR)}</td><td class="money ${payClass(p.cPay)}">${money(p.cPay)}</td><td class="money ${payClass(p.mPay)}">${money(p.mPay)}</td></tr>`).join('');
+  let bk=selMons.map(mon=>{let md=monthData[mon];let dash=!md.mHasAny;return`<tr><td>${+mon.slice(5,7)}月</td><td>${md.countsOff}</td><td class="money salary">${dash?'—':money(md.endWOff)}</td>${pNames.map(n=>{let p=md.pays.find(x=>x.name===n);return`<td class="money ${payClass(p?p.mPay:0)}">${dash?'—':money(p?p.mPay:0)}</td>`}).join('')}</tr>`}).join('');
+  let hCells=pNames.map(n=>`<th>${labelOf(n)}</th>`).join('');
+  let notes=selMons.map(mon=>{let nt=getMonthNote(mon);return nt?`<div class="month-note"><b>${+mon.slice(5,7)}月备注：</b>${nt}</div>`:''}).join('');
+  box.innerHTML=`<div class="month-stat"><div class="stat-head"><span>${yr}年 年度汇总</span><small>已选 ${selMons.length} 个月</small></div><div class="stat-subtitle">${labelOf(offCode)}正式员工年度工资</div>${offT}<div class="stat-subtitle">支付方年度统计</div><table class="stat-table"><thead><tr><th>人员</th><th>天数</th><th>比例</th><th>当前需付</th><th>预计需付</th></tr></thead><tbody>${admR}${payR}</tbody></table></div><div class="month-stat" style="margin-top:12px"><div class="stat-head"><span>按月明细</span><small>行=月份, 列=人员</small></div><div style="overflow-x:auto"><table class="stat-table" style="min-width:auto"><thead><tr><th>月份</th><th>${labelOf(offCode)}</th><th>工资</th>${hCells}</tr></thead><tbody>${bk}</tbody></table></div></div>${notes}<div class="stat-note">年度汇总 = 所选月份月度数据之和。切换年份时月份筛选自动重置。</div>`;
 }
-</script>
-<script>
-async function doClaim(id){await db.from('clues').update({assigned_to:USER,claimed_at:new Date().toISOString()}).eq('id',id);await db.from('operation_logs').insert({clue_id:id,action:'claim',detail:'认领线索',operator:USER,operator_role:ROLE});render()}
-async function abandon(id){if(!confirm('确认放弃该线索？'))return;await db.from('clues').update({assigned_to:null,claimed_at:null,assigned_at:null}).eq('id',id);await db.from('operation_logs').insert({clue_id:id,action:'abandon',detail:'放弃回公海',operator:USER,operator_role:ROLE});render()}
-async function doStatus(id,status){await db.from('clues').update({status:status}).eq('id',id);await db.from('operation_logs').insert({clue_id:id,action:'status_change',detail:'进度\u2192'+STG[status],operator:USER,operator_role:ROLE});closeSheet();render()}
-async function addRemark(id){var el=document.getElementById('remarkInput');if(!el)return;var t=el.value.trim();if(!t)return;await db.from('remarks').insert({clue_id:id,content:t,created_by:USER});await db.from('operation_logs').insert({clue_id:id,action:'remark',detail:'添加备注',operator:USER,operator_role:ROLE});el.value='';openDetail(id)}
-async function doAssignSingle(id,to){await db.from('clues').update({assigned_to:to,assigned_at:new Date().toISOString()}).eq('id',id);await db.from('operation_logs').insert({clue_id:id,action:'assign',detail:'分配给'+to,operator:USER,operator_role:ROLE});closeSheet();render()}
-async function doBatchStatus(s){var ids=Array.from(selected);for(var i=0;i<ids.length;i++){var id=ids[i];await db.from('clues').update({status:s}).eq('id',id);await db.from('operation_logs').insert({clue_id:id,action:'status_change',detail:'批量进度\u2192'+STG[s],operator:USER,operator_role:ROLE})}endBatch()}
-async function doBatchTag(tid){var ids=Array.from(selected);for(var i=0;i<ids.length;i++){var id=ids[i];var r=await db.from('clues').select('tag_ids').eq('id',id).single();var a=r.data?r.data.tag_ids||[]:[];if(a.indexOf(tid)<0)a=a.concat([tid]);await db.from('clues').update({tag_ids:a,is_marked:true}).eq('id',id)}endBatch()}
-async function doBatchAssign(to){var ids=Array.from(selected);for(var i=0;i<ids.length;i++){var id=ids[i];await db.from('clues').update({assigned_to:to,assigned_at:new Date().toISOString()}).eq('id',id);await db.from('operation_logs').insert({clue_id:id,action:'assign',detail:'批量分配给'+to,operator:USER,operator_role:ROLE})}endBatch()}
-function endBatch(){batchMode=false;selected.clear();document.getElementById('batchBtn').classList.remove('on');document.getElementById('batchBar').classList.remove('show');render()}
-function dial(phone){closeSheet();setTimeout(function(){
-  sheetOpen('<div style="text-align:center"><div style="font-size:48px;margin-bottom:12px">\uD83D\uDCDE</div><div style="font-weight:600;font-size:18px">'+mp(phone)+'</div><div style="font-size:24px;font-family:monospace;margin:8px 0">'+phone+'</div><a href="tel:'+phone+'" style="display:inline-block;padding:12px 48px;background:#10B981;color:#fff;border-radius:14px;font-size:16px;font-weight:600;text-decoration:none;margin-top:8px">拨号</a></div><div style="text-align:center;margin-top:12px;color:#6b7280;font-size:12px" onclick="closeSheet()">关闭</div>')},100)}
-function sheetOpen(h){document.getElementById('sheetBody').innerHTML=h;document.getElementById('sheetOverlay').classList.add('show')}
-function closeSheet(){document.getElementById('sheetOverlay').classList.remove('show')}
-function openFilter(){
-  var opts='';for(var i=0;i<STAGES.length;i++)opts+='<option value="'+STAGES[i]+'">'+STG[STAGES[i]]+'</option>';
-  sheetOpen('<div class="sh-title">筛选</div><div style="margin-bottom:12px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">线索进度</div><select id="fStatus"><option value="">全部</option>'+opts+'</select></div><div style="margin-bottom:12px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">流量类型</div><select id="fTraffic"><option value="">全部</option><option value="live">直播</option><option value="video">视频</option><option value="other">其他</option></select></div><button class="btn-full btn-primary-full" onclick="applyFilter()">应用筛选</button><button class="btn-full btn-gray-full" onclick="closeSheet()">取消</button>')
-}
-function applyFilter(){closeSheet()}
-function sheetStatus(id){
-  var pills='';for(var i=0;i<STAGES.length;i++)pills+='<button class="stage-pill" onclick="doStatus(\''+id+'\',\''+STAGES[i]+'\');closeSheet()">'+STG[STAGES[i]]+'</button>';
-  sheetOpen('<div class="sh-title">更新进度</div><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px">'+pills+'</div><div class="mention danger" onclick="doStatus(\''+id+'\',\'no_intent\');closeSheet()">标为无意向</div><div style="text-align:center;margin-top:8px;color:#6b7280;font-size:12px" onclick="closeSheet()">取消</div>')
-}
-function sheetTag(id){
-  var g={};for(var i=0;i<tagCache.length;i++){var t=tagCache[i];if(!g[t.group_id])g[t.group_id]=[];g[t.group_id].push(t)}
-  var cl=null;for(var i=0;i<clueCache.length;i++){if(clueCache[i].id===id){cl=clueCache[i];break}}
-  var cur=cl?new Set(cl.tag_ids||[]):new Set(),keys=Object.keys(g),h='<div class="sh-title">标签管理</div>';
-  for(var ki=0;ki<keys.length;ki++){
-    var gid=keys[ki],tags=g[gid],gn='';for(var ti=0;ti<tagCache.length;ti++){if(tagCache[ti].group_id===gid){gn=tagCache[ti].group_name||'';break}}
-    h+='<div style="margin-bottom:12px"><div style="font-size:11px;color:#6b7280;margin-bottom:4px">'+gn+'</div><div style="display:flex;flex-wrap:wrap;gap:4px">';
-    for(var ti=0;ti<tags.length;ti++){var t=tags[ti];h+='<button class="card-tag" style="background:'+t.color+'18;color:'+t.color+';padding:6px 12px;border-radius:8px;border:2px solid '+(cur.has(t.id)?t.color:'transparent')+';cursor:pointer;font-size:12px" onclick="toggleTag(\''+id+'\',\''+t.id+'\',this)">'+t.name+'</button>'}
-    h+='</div></div>'
-  }
-  h+='<button class="btn-full btn-primary-full" onclick="closeSheet()">完成</button>';sheetOpen(h)
-}
-async function toggleTag(cid,tid,el){
-  var r=await db.from('clues').select('tag_ids').eq('id',cid).single();var a=r.data?r.data.tag_ids||[]:[],had=a.indexOf(tid)>=0;
-  if(had)a=a.filter(function(x){return x!==tid});else a=a.concat([tid]);
-  await db.from('clues').update({tag_ids:a,is_marked:a.length>0}).eq('id',cid);
-  await db.from('operation_logs').insert({clue_id:cid,action:had?'untag':'tag',detail:(had?'取消':'添加')+'标签',operator:USER,operator_role:ROLE});
-  if(el){var tc=null;for(var i=0;i<tagCache.length;i++){if(tagCache[i].id===tid){tc=tagCache[i];break}}el.style.borderColor=had?'transparent':(tc?tc.color:'#4F46E5')}
-  render()
-}
-function sheetAssign(id){
-  var s='';for(var i=0;i<staffCache.length;i++){s+='<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer"><input type="radio" name="assignTo" value="'+staffCache[i].id+'"><span>'+staffCache[i].name+'</span></label>'}
-  sheetOpen('<div class="sh-title">分配线索</div><div style="max-height:260px;overflow-y:auto;margin-bottom:12px">'+s+'</div><button class="btn-full btn-primary-full" onclick="doAssign(\''+id+'\')">确认分配</button>')
-}
-function doAssign(id){var el=document.querySelector('input[name="assignTo"]:checked');if(!el)return;doAssignSingle(id,el.value)}
-function batchStatus(){
-  var pills='';for(var i=0;i<STAGES.length;i++)pills+='<button class="stage-pill" onclick="doBatchStatus(\''+STAGES[i]+'\');closeSheet()">'+STG[STAGES[i]]+'</button>';
-  sheetOpen('<div class="sh-title">批量更新进度 ('+selected.size+'条)</div><div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px">'+pills+'</div>')
-}
-function batchTag(){
-  var g={};for(var i=0;i<tagCache.length;i++){var t=tagCache[i];if(!g[t.group_id])g[t.group_id]=[];g[t.group_id].push(t)}
-  var keys=Object.keys(g),h='<div class="sh-title">批量打标签 ('+selected.size+'条)</div>';
-  for(var ki=0;ki<keys.length;ki++){
-    var gid=keys[ki],tags=g[gid],gn='';for(var ti=0;ti<tagCache.length;ti++){if(tagCache[ti].group_id===gid){gn=tagCache[ti].group_name||'';break}}
-    h+='<div style="margin-bottom:8px"><div style="font-size:11px;color:#6b7280;margin-bottom:4px">'+gn+'</div><div style="display:flex;flex-wrap:wrap;gap:4px">';
-    for(var ti=0;ti<tags.length;ti++){h+='<button class="card-tag" style="background:'+tags[ti].color+'18;color:'+tags[ti].color+';padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px" onclick="doBatchTag(\''+tags[ti].id+'\');closeSheet()">'+tags[ti].name+'</button>'}
-    h+='</div></div>'
-  }
-  h+='<button class="btn-full btn-gray-full" onclick="closeSheet()">取消</button>';sheetOpen(h)
-}
-function batchAssign(){
-  if(!staffCache.length){alert('暂无可用客服');return}
-  var s='';for(var i=0;i<staffCache.length;i++)s+='<label style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer"><input type="radio" name="batchAssignTo" value="'+staffCache[i].id+'"><span>'+staffCache[i].name+'</span></label>';
-  sheetOpen('<div class="sh-title">批量分配 ('+selected.size+'条)</div><div style="max-height:260px;overflow-y:auto;margin-bottom:12px">'+s+'</div><button class="btn-full btn-primary-full" onclick="doBatchAssign2()">确认分配</button>')
-}
-function doBatchAssign2(){var el=document.querySelector('input[name="batchAssignTo"]:checked');if(!el)return;doBatchAssign(el.value);closeSheet()}
-</script>
-<script>
-async function openDetail(id){
-  var r1=db.from('clues').select('*').eq('id',id).single();
-  var r2=db.from('follow_ups').select('*').eq('clue_id',id).order('created_at',{ascending:false}).limit(100);
-  var r3=db.from('remarks').select('*').eq('clue_id',id).order('created_at',{ascending:false}).limit(100);
-  var r4=db.from('operation_logs').select('*').eq('clue_id',id).order('created_at',{ascending:false}).limit(100);
-  var results=await Promise.all([r1,r2,r3,r4]);
-  detailClue=results[0].data;detailFollows=results[1].data||[];detailRemarks=results[2].data||[];detailLogs=results[3].data||[];detailTab='info';
-  document.getElementById('detailOverlay').classList.add('show');renderDetail()
-}
-function closeDetail(){document.getElementById('detailOverlay').classList.remove('show');render()}
-function setDetailTab(t){detailTab=t;renderDetail()}
-function renderDetail(){
-  var c=detailClue;if(!c){document.getElementById('detailContent').innerHTML='';return}
-  var calls=detailFollows.filter(function(f){return f.type==='call'});
-  var conn=calls.filter(function(f){return f.call_result==='connected'}).length;
-  var nconn=calls.filter(function(f){return f.call_result&&f.call_result!=='connected'}).length;
-  var tags=[];for(var i=0;i<(c.tag_ids||[]).length;i++){for(var j=0;j<tagCache.length;j++){if(tagCache[j].id===c.tag_ids[i]){tags.push(tagCache[j]);break}}}
-  var tagHtml=tags.length?tags.map(function(t){return'<span class="card-tag" style="background:'+t.color+'18;color:'+t.color+';padding:3px 8px;font-size:11px">'+t.name+'</span>'}).join(''):'<span style="font-size:11px;color:#9ca3af">暂无标签</span>';
-  var curIdx=STAGES.indexOf(c.status);
-  var stagesHtml='';for(var i=0;i<STAGES.length;i++){stagesHtml+='<button class="stage-pill'+(STAGES[i]===c.status?' cur':'')+(i<curIdx?' past':'')+'" onclick="doStatus(\''+c.id+'\',\''+STAGES[i]+'\');closeDetail();setTimeout(function(){openDetail(\''+c.id+'\')},200)">'+STG[STAGES[i]]+'</button>'}
-  document.getElementById('detailContent').innerHTML=
-  '<div class="detail-header"><span class="back" onclick="closeDetail()">\u2190</span><span style="font-weight:700;font-size:15px;flex:1">线索详情</span><span class="mention danger" style="padding:4px 10px;font-size:11px;border-radius:8px;cursor:pointer" onclick="doStatus(\''+c.id+'\',\'no_intent\');closeDetail();render()">标为无意向</span></div>'+
-  '<div class="detail-scroll"><div class="detail-section"><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:44px;height:44px;font-size:18px">'+(c.name||'?').slice(0,1)+(c.is_online?'<span class="online-dot"></span>':'')+'</div><div style="flex:1"><div class="detail-t">'+mn(c.name)+' <span style="font-size:11px;background:#f3f4f6;padding:1px 6px;border-radius:4px;vertical-align:middle">'+STG[c.status]+'</span></div><div class="detail-s">'+mp(c.phone)+' \u00B7 '+ft(c.created_at)+'</div></div></div><div class="s-fields"><span>最近联系: '+(c.last_contact_at?ft(c.last_contact_at):'暂无')+'</span><span>通话: 接通'+conn+'次 未接通'+nconn+'次</span></div></div>'+
-  '<div class="detail-section"><div class="s-title">线索阶段</div><div class="stages">'+stagesHtml+'</div><div class="s-title" style="margin-top:10px">标签</div><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+tagHtml+'<button class="card-act primary" onclick="sheetTag(\''+c.id+'\')">+添加</button></div></div>'+
-  '<div class="detail-tabs"><button onclick="setDetailTab(\'info\')" id="dtInfo" class="detail-tab'+(detailTab==='info'?' sel':'')+'">线索信息</button><button onclick="setDetailTab(\'calls\')" id="dtCalls" class="detail-tab'+(detailTab==='calls'?' sel':'')+'">通话记录</button><button onclick="setDetailTab(\'remarks\')" id="dtRemarks" class="detail-tab'+(detailTab==='remarks'?' sel':'')+'">备注</button><button onclick="setDetailTab(\'logs\')" id="dtLogs" class="detail-tab'+(detailTab==='logs'?' sel':'')+'">操作日志</button></div>'+
-  '<div id="dtcContainer">'+(detailTab==='info'?renderInfo():detailTab==='calls'?renderCalls():detailTab==='remarks'?renderRemarks():renderLogs())+'</div><div style="height:60px"></div></div>'+
-  '<div class="detail-actions"><button class="btn-primary" onclick="sheetStatus(\''+c.id+'\')">改进度</button><button class="btn-primary" style="background:#6366f1" onclick="sheetTag(\''+c.id+'\')">打标签</button><button class="btn-call" onclick="dial(\''+c.phone+'\')">\uD83D\uDCDE 拨打</button></div>'
-}
-function renderInfo(){
-  var c=detailClue,rows=[],h='',i;
-  rows.push(['姓名',c.name||'-']);rows.push(['电话','<a href="tel:'+c.phone+'" class="link">'+(encrypted?mp(c.phone):c.phone)+'</a>']);
-  rows.push(['微信',(c.wechat||'-')+'']);rows.push(['性别',c.gender||'-']);
-  rows.push(['用户中间号',c.middle_number||'-']);rows.push(['线索组件',TYPES[c.clue_type]||c.clue_type||'-']);
-  rows.push(['线索归属地',c.clue_location||'-']);rows.push(['客户城市',c.customer_city||'-']);
-  rows.push(['流量渠道',c.channel||'-']);rows.push(['流量类型',TRAFFIC[c.traffic_type]||c.traffic_type||'-']);
-  rows.push(['广告计划',c.ad_plan_id||'-']);rows.push(['广告组',c.ad_group_id||'-']);
-  rows.push(['视频ID',c.video_id||'-']);
-  h='<div class="detail-section">';
-  for(i=0;i<rows.length;i++)h+='<div class="info-row"><span class="label">'+rows[i][0]+'</span><span class="val">'+rows[i][1]+'</span></div>';
-  if(c.form_detail)h+='<div class="info-row" style="flex-direction:column;align-items:flex-start"><span class="label">表单详情</span><pre style="background:#f9fafb;border-radius:8px;padding:10px;font-size:11px;overflow-x:auto;width:100%;margin-top:4px">'+JSON.stringify(c.form_detail,null,2)+'</pre></div>';
-  if(c.extra_fields&&typeof c.extra_fields==='object'&&Object.keys(c.extra_fields).length)h+='<div class="info-row" style="flex-direction:column;align-items:flex-start"><span class="label">扩展字段</span><pre style="background:#f9fafb;border-radius:8px;padding:10px;font-size:11px;overflow-x:auto;width:100%;margin-top:4px">'+JSON.stringify(c.extra_fields,null,2)+'</pre></div>';
-  h+='</div>';return h
-}
-function renderCalls(){
-  var calls=detailFollows.filter(function(f){return f.type==='call'}),h='<div class="detail-section">';
-  if(!calls.length){h+='<div class="empty" style="padding:40px">暂无通话记录</div>'}
-  else{for(var i=0;i<calls.length;i++){var f=calls[i],r=CALL_MAP[f.call_result]||f.call_result;h+='<div class="follow-item"><div style="display:flex;gap:8px;margin-bottom:2px"><span style="color:#6b7280">'+ft(f.created_at)+'</span><span style="padding:1px 6px;background:#f3f4f6;border-radius:4px;font-size:11px">'+r+'</span></div>'+(f.content?'<div style="font-size:12px">'+f.content+'</div>':'')+'</div>'}}
-  h+='<button class="btn-full btn-primary-full" onclick="addCall(\''+detailClue.id+'\')">+ 添加通话记录</button></div>';return h
-}
-function renderRemarks(){
-  var h='<div class="detail-section">';
-  if(!detailRemarks.length){h+='<div class="empty" style="padding:40px">暂无备注</div>'}
-  else{for(var i=0;i<detailRemarks.length;i++){var r=detailRemarks[i];h+='<div class="follow-item" style="border-left:'+(r.is_important?'2px solid #EF4444':'')+';padding-left:'+(r.is_important?'8px':'0')+'"><div style="font-size:11px;color:#6b7280;margin-bottom:2px">'+ft(r.created_at)+'</div><div>'+r.content+'</div></div>'}}
-  h+='<div style="display:flex;gap:8px;margin-top:10px"><input id="remarkInput" placeholder="添加备注..." style="flex:1;height:38px;border:1px solid #e5e7eb;border-radius:10px;padding:0 12px;font-size:13px"><button onclick="addRemark(\''+detailClue.id+'\')" style="padding:0 16px;background:#4F46E5;color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer">添加</button></div></div>';return h
-}
-function renderLogs(){
-  var h='<div class="detail-section">';
-  if(!detailLogs.length){h+='<div class="empty" style="padding:40px">暂无操作日志</div>'}
-  else{for(var i=0;i<detailLogs.length;i++){var l=detailLogs[i];h+='<div class="log-item"><span class="time">'+ft(l.created_at)+'</span><span class="act">'+(ACT_MAP[l.action]||l.action)+'</span><span style="flex:1">'+(l.detail||'')+'</span><span style="color:#d1d5db;font-size:10px">'+l.operator+'</span></div>'}}
-  h+='</div>';return h
-}
-async function addCall(id){
-  sheetOpen('<div class="sh-title">添加通话记录</div><div style="margin-bottom:10px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">通话结果</div><select id="callResultSolid"><option value="connected">接通</option><option value="no_answer">未接</option><option value="busy">忙线</option><option value="wrong_number">空号</option></select></div><div style="margin-bottom:10px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">备注</div><textarea id="callNoteSolid" rows="2" placeholder="通话备注..."></textarea></div><button class="btn-full btn-primary-full" onclick="saveCall(\''+id+'\')">保存</button>')
-}
-async function saveCall(id){
-  var r=document.getElementById('callResultSolid').value,n=document.getElementById('callNoteSolid').value;
-  await db.from('follow_ups').insert({clue_id:id,type:'call',call_result:r,content:n,created_by:USER});
-  if(r==='connected')await db.from('clues').update({last_contact_at:new Date().toISOString()}).eq('id',id);
-  await db.from('operation_logs').insert({clue_id:id,action:'call',detail:'通话: '+CALL_MAP[r],operator:USER,operator_role:ROLE});
-  closeSheet();openDetail(id)
-}
-</script>
-<script>
-async function loadData(){
-  var s=document.getElementById('dataContent');
-  try{var result=await db.from('clues').select('created_at,traffic_type').order('created_at',{ascending:false}).limit(10000);
-    var all=result.data||[],n=new Date(),halfY=all.length;
-    var y0=new Date(n.getFullYear(),n.getMonth(),n.getDate()),y1=new Date(y0-864e5);
-    var yest=all.filter(function(r){var d=new Date(r.created_at);return d>=y1&&d<y0}).length;
-    var d7cut=new Date(n-7*864e5),d30cut=new Date(n-30*864e5),d14cut=new Date(n-14*864e5),d60cut=new Date(n-60*864e5);
-    var d7=all.filter(function(r){return new Date(r.created_at)>=d7cut}).length;
-    var d30=all.filter(function(r){return new Date(r.created_at)>=d30cut}).length;
-    var p7=all.filter(function(r){var d=new Date(r.created_at);return d>=d14cut&&d<d7cut}).length;
-    var p30=all.filter(function(r){var d=new Date(r.created_at);return d>=d60cut&&d<d30cut}).length;
-    var q7=p7?((d7-p7)/p7*100).toFixed(1):'-',q30=p30?((d30-p30)/p30*100).toFixed(1):'-';
-    var days=[];for(var i=29;i>=0;i--)days.push(new Date(n-i*864e5).toISOString().slice(0,10));
-    var dm={};for(var i=0;i<all.length;i++){var k=all[i].created_at.slice(0,10);dm[k]=(dm[k]||0)+1}
-    s.innerHTML='<div class="stats-grid"><div class="stat-card"><div class="sc-l">近半年线索量</div><div class="sc-v">'+halfY+'</div></div><div class="stat-card"><div class="sc-l">昨日线索量</div><div class="sc-v">'+yest+'</div></div><div class="stat-card"><div class="sc-l">近7日线索量</div><div class="sc-v">'+d7+'</div><div class="sc-q'+(Number(q7)<0?' down':'')+'">环比 '+(q7>0?'+'+q7:q7)+'%</div></div><div class="stat-card"><div class="sc-l">近30日线索量</div><div class="sc-v">'+d30+'</div><div class="sc-q'+(Number(q30)<0?' down':'')+'">环比 '+(q30>0?'+'+q30:q30)+'%</div></div></div><div class="stat-card" style="padding:16px;margin-bottom:0"><div style="font-size:13px;font-weight:600;margin-bottom:8px">线索趋势 (近30天)</div><canvas id="trendChart" style="width:100%;height:200px"></canvas></div>';
-    setTimeout(function(){
-      var ctx=document.getElementById('trendChart');if(!ctx)return;ctx=ctx.getContext('2d');if(!ctx)return;
-      if(trendChart)trendChart.destroy();
-      trendChart=new Chart(ctx,{type:'line',data:{labels:days.map(function(d){return d.slice(5)}),datasets:[{label:'线索量',data:days.map(function(d){return dm[d]||0}),borderColor:'#4F46E5',backgroundColor:'rgba(79,70,229,0.08)',fill:true,tension:0.35,pointRadius:0,pointHoverRadius:4,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1f2937'}},scales:{x:{grid:{display:false}},y:{beginAtZero:true}}}})
-    },200)
-  }catch(e){s.innerHTML='<div class="empty">加载失败</div>'}
-}
-async function loadMe(){
-  var r=await db.from('staff').select('*').eq('id',USER).single();
-  var st=r.data||{name:'用户',id:USER,role:ROLE,phone:''},roles={admin:'管理员',manager:'经理',sales:'客服'};
-  document.getElementById('meContent').innerHTML=
-  '<div class="detail-section" style="margin-bottom:0"><div style="display:flex;align-items:center;gap:12px"><div class="avatar" style="width:52px;height:52px;font-size:20px">'+(st.name||'?').slice(0,1)+'</div><div style="flex:1"><div style="font-weight:700;font-size:16px">'+st.name+'</div><div style="font-size:12px;color:#6b7280">账户ID: '+st.id+'</div><div style="font-size:11px;color:#6b7280;margin-top:2px">角色: '+(roles[st.role]||st.role)+' · '+(st.phone||'未设置号码')+'</div></div></div></div>'+
-  '<div class="section-card" style="margin:12px 0"><div class="sc-row" onclick="sheetTagManage()"><span>线索标签</span><span class="arrow">\u203A</span></div><div class="sc-row" onclick="sheetDedup()"><span>线索去重</span><span class="arrow">\u203A</span></div><div class="sc-row" onclick="sheetRemind()"><span>线索提醒</span><span class="arrow">\u203A</span></div><div class="sc-row" onclick="sheetAssignRule()"><span>分配规则 (轮询)</span><span class="arrow">\u203A</span></div></div>'+
-  '<div class="section-card"><div class="sc-row" onclick="sheetPhone()"><span>本机号码</span><span style="color:#6b7280;font-size:12px">'+(st.phone||'未设置')+' \u203A</span></div><div class="sc-row"><span>部门</span><span style="color:#6b7280;font-size:12px">-</span></div></div>'
-}
-async function sheetTagManage(){
-  await loadPrefs();var g={};for(var i=0;i<tagCache.length;i++){var t=tagCache[i];if(!g[t.group_id])g[t.group_id]=[];g[t.group_id].push(t)}
-  var keys=Object.keys(g),h='<div class="sh-title">标签管理</div>';
-  for(var ki=0;ki<keys.length;ki++){
-    var gid=keys[ki],tags=g[gid],gn='';for(var i=0;i<tagCache.length;i++){if(tagCache[i].group_id===gid){gn=tagCache[i].group_name||gid.slice(0,8);break}}
-    h+='<div style="background:#f9fafb;border-radius:12px;padding:12px;margin-bottom:10px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-weight:600;font-size:14px">'+gn+'</span><span style="font-size:12px;color:#4F46E5;cursor:pointer" onclick="addTagToGroup(\''+gid+'\')">+标签</span></div><div style="display:flex;flex-wrap:wrap;gap:4px">';
-    for(var i=0;i<tags.length;i++){h+='<span class="card-tag" style="background:'+tags[i].color+'18;color:'+tags[i].color+';padding:4px 10px;font-size:12px;border-radius:6px">'+tags[i].name+'</span>'}
-    h+=(tags.length?'':'<span style="font-size:11px;color:#6b7280">暂无标签</span>')+'</div></div>'
-  }
-  h+='<button class="btn-full btn-primary-full" onclick="createTagGroup()">+ 新建标签组</button><button class="btn-full btn-gray-full" onclick="closeSheet()">关闭</button>';sheetOpen(h)
-}
-async function createTagGroup(){var name=prompt('标签组名称:');if(!name)return;await db.from('tag_groups').insert({name:name,owner_id:USER});closeSheet();sheetTagManage()}
-async function addTagToGroup(gid){var name=prompt('标签名称:');if(!name)return;var colors=['#EF4444','#F59E0B','#10B981','#3B82F6','#8B5CF6','#EC4899'];var color=colors[Math.floor(Math.random()*colors.length)];await db.from('clue_tags').insert({group_id:gid,name:name,color:color,owner_id:USER});closeSheet();sheetTagManage()}
-async function sheetDedup(){
-  var r=await db.from('dedup_settings').select('*').eq('owner_id',USER).single();
-  var d=r.data||{is_active:true,dedup_by:'phone',dedup_window_days:30};
-  sheetOpen('<div class="sh-title">线索去重</div><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="dedupActive" '+(d.is_active?'checked':'')+'><span style="font-size:14px">启用去重</span></label><div style="margin-bottom:12px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">去重时间窗口（天）</div><input id="dedupDays" type="number" value="'+d.dedup_window_days+'" style="width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;font-size:14px"></div><button class="btn-full btn-primary-full" onclick="saveDedup()">保存</button>')
-}
-async function saveDedup(){var a=document.getElementById('dedupActive').checked,w=parseInt(document.getElementById('dedupDays').value)||30;await db.from('dedup_settings').upsert({owner_id:USER,is_active:a,dedup_by:'phone',dedup_window_days:w},{onConflict:'owner_id'});closeSheet()}
-async function sheetRemind(){
-  var r=await db.from('reminder_settings').select('*').eq('owner_id',USER).single();
-  var d=r.data||{is_active:true,no_follow_hours:24};
-  sheetOpen('<div class="sh-title">线索提醒</div><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="remActive" '+(d.is_active?'checked':'')+'><span style="font-size:14px">启用提醒</span></label><div style="margin-bottom:12px"><div style="font-size:12px;color:#6b7280;margin-bottom:4px">超过N小时未跟进时提醒</div><input id="remHours" type="number" value="'+d.no_follow_hours+'" style="width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;font-size:14px"></div><button class="btn-full btn-primary-full" onclick="saveRemind()">保存</button>')
-}
-async function saveRemind(){var a=document.getElementById('remActive').checked,h=parseInt(document.getElementById('remHours').value)||24;await db.from('reminder_settings').upsert({owner_id:USER,is_active:a,no_follow_hours:h},{onConflict:'owner_id'});closeSheet()}
-async function sheetAssignRule(){
-  var r=await db.from('assignment_rules').select('*').eq('owner_id',USER).single();
-  var rule=r.data||{is_active:true,staff_ids:[]},chk={};
-  for(var i=0;i<(rule.staff_ids||[]).length;i++)chk[rule.staff_ids[i]]=true;
-  var s='';for(var i=0;i<staffCache.length;i++){s+='<label style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f3f4f6"><input type="checkbox" class="arStaff" value="'+staffCache[i].id+'" '+(chk[staffCache[i].id]?'checked':'')+'><span style="font-size:14px">'+staffCache[i].name+'</span><span style="font-size:11px;color:#6b7280">'+staffCache[i].id+'</span></label>'}
-  sheetOpen('<div class="sh-title">分配规则 (轮询分配)</div><label style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><input type="checkbox" id="arActive" '+(rule.is_active?'checked':'')+'><span style="font-size:14px">启用自动分配</span></label><div style="font-size:12px;color:#6b7280;margin-bottom:6px">参与轮询的客服 (顺序即分配顺序)</div><div style="max-height:240px;overflow-y:auto;margin-bottom:12px">'+s+'</div><button class="btn-full btn-primary-full" onclick="saveAssignRule()">保存</button>')
-}
-async function saveAssignRule(){var a=document.getElementById('arActive').checked,ids=[],els=document.querySelectorAll('.arStaff:checked');for(var i=0;i<els.length;i++)ids.push(els[i].value);await db.from('assignment_rules').upsert({owner_id:USER,is_active:a,staff_ids:ids,mode:'round_robin'},{onConflict:'owner_id'});closeSheet()}
-function sheetPhone(){var stEl=document.querySelector('#meContent .sc-row span');var curPhone=staffCache[0]?staffCache[0].phone||'':'';sheetOpen('<div class="sh-title">本机号码</div><input id="phoneInput" type="tel" value="'+curPhone+'" style="width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;font-size:14px;margin-bottom:12px"><button class="btn-full btn-primary-full" onclick="savePhone()">保存</button>')}
-async function savePhone(){var p=document.getElementById('phoneInput').value.trim();await db.from('staff').update({phone:p}).eq('id',USER);closeSheet();loadMe()}
-render();loadPrefs()
-</script>
+
+function render(){renderCal();renderTags();state();if(!$('tabStats').classList.contains('hidden-panel'))renderStatsView()}function check(){if(!currentName)return'请先选择姓名';return''}
+$('settingsBtn').addEventListener('click',e=>{e.stopPropagation();$('settingsDrop').classList.toggle('show')},{passive:true});$('settingsDrop').addEventListener('click',e=>e.stopPropagation());document.addEventListener('click',()=>$('settingsDrop').classList.remove('show'));$('cfgBtn').addEventListener('click',e=>{e.stopPropagation();$('settingsDrop').classList.remove('show');openCfgModal()});$('memberBtn').addEventListener('click',e=>{e.stopPropagation();$('settingsDrop').classList.remove('show');openMemberModal()});$('logBtn').addEventListener('click',e=>{e.stopPropagation();$('settingsDrop').classList.remove('show');openLogModal()});$('logClose').addEventListener('click',closeLogModal);$('logExport').addEventListener('click',exportLogs);$('logFilter').addEventListener('change',()=>renderLogList());$('logRefresh').addEventListener('click',async()=>{$('logList').innerHTML='<div class="log-item">加载中...</div>';let r=await fetchLogs();_logRows=r.rows;renderLogList(r.src)});$('logModal').addEventListener('click',e=>{if(e.target===$('logModal'))closeLogModal()});
+$('cfgSave').onclick=saveCfgModal;$('cfgCancel').onclick=closeCfgModal;$('addMember').onclick=addMemberRow;$('memberSave').onclick=saveMemberModal;$('memberCancel').onclick=closeMemberModal;
+$('tabDutyBtn').onclick=()=>switchMainTab('duty');$('tabStatsBtn').onclick=()=>switchMainTab('stats');
+$('stMonBtn').onclick=()=>switchStatsTab('month');$('stYrBtn').onclick=()=>switchStatsTab('year');
+$('stMonPrev').onclick=()=>{statsMonth.setMonth(statsMonth.getMonth()-1);renderMonthView()};$('stMonNext').onclick=()=>{statsMonth.setMonth(statsMonth.getMonth()+1);renderMonthView()};
+$('stYrPrev').onclick=()=>{statsYear--;statsMonths.clear();renderYearView()};$('stYrNext').onclick=()=>{statsYear++;statsMonths.clear();renderYearView()};
+$('name').onchange=async()=>{let n=$('name').value;if(!n){currentName='';sel.clear();render();clearSavedName();return}try{await loadName(n)}catch(e){msg('读取失败：'+e.message)}};
+$('prev').onclick=()=>{month.setMonth(month.getMonth()-1);renderCal()};$('next').onclick=()=>{month.setMonth(month.getMonth()+1);renderCal()};$('save').onclick=()=>saveCloud(false);$('submit').onclick=async()=>{let e=check();if(e)return msg(e);if(submitted&&!hasChanged())return msg('未变更内容无需重复保存');if(!(await ensureEditAuth()))return;submitted=sel.size>0;await saveCloud(true);editMode=false;render();msg(sel.size?'已提交到云端':'已清空日期并同步到云端')};$('edit').onclick=async()=>{if(!currentName)return msg('请先选择姓名');if(!(await ensureEditAuth()))return;editMode=!editMode;render()};$('passOk').onclick=()=>passDone(true);$('passCancel').onclick=()=>passDone(false);$('passInput').onkeydown=e=>{if(e.key==='Enter')passDone(true)};$('noteSave').onclick=saveMonthNote;$('noteCancel').onclick=closeNote;
+populateSelect();
+(function(){let n=getSavedName();if(n&&activeNames().includes(n)){currentName=n;$('name').value=n;sel=new Set();submitted=false;render();msg('正在同步...')}(async function(){try{await loadAll();if(currentName){let r=rowOf(currentName);setData(r?fromCloud(r):{name:currentName});render()}else render()}catch(e){msg('读取云端失败：'+e.message);render()}})()})();
+</script><script type="text/javascript" src="/accessproxy_statics/h5_fp.js" defer></script>
+<script type="text/javascript" src="/accessproxy_statics/wm.js" defer></script>
 <script type="text/javascript" src="/accessproxy_statics/h5_fp.js" defer></script>
 <script type="text/javascript" src="/accessproxy_statics/wm.js" defer></script>
 </body></html>
